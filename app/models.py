@@ -73,3 +73,14 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+class RefundRequest(models.Model):
+    approval = models.BooleanField(default=False)
+    approval_date = models.DateTimeField(null=True, blank=True)
+    amount = models.FloatField()
+    reason = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+    client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
+    def __str__(self):
+        return f"RefundRequest {self.pk} - User: {self.client.username} - Amount: {self.amount} - Approved: {self.approval}"
+        
