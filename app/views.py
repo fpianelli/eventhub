@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Event, User
+from .models import Event, User, Ticket
 
 
 def register(request):
@@ -125,3 +125,9 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+def ticket_detail(request):
+    return render(request, "app/ticket_detail.html")
+
+def ticket_form(request):
+    return render(request, "app/ticket_form.html")
