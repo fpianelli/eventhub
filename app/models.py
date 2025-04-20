@@ -73,3 +73,13 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+class Comment(models.Model):
+    title= models.CharField(max_length=100)
+    text= models.TextField()
+    created_at= models.DateTimeField(auto_now_add=True)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE, related_name="comments")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="comments")
+
+    def __str__(self):
+        return f"{self.title} - {self.user.username}"
