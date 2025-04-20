@@ -30,4 +30,6 @@ Aplicación web para venta de entradas utilizada en la cursada 2025 de Ingenier�
 
 `python manage.py runserver`
 
-## Nombre: Valentino Laure
+## Valentino Laure
+## Felipe Pianelli
+## Joaquín Caputo
