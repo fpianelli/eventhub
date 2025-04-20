@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.conf import settings
 
 
 class User(AbstractUser):
@@ -73,3 +74,16 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+class Ticket (models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    event = models.ForeignKey(Event, on_delete=models.CASCADE)
+    price = models.FloatField()
+    buy_date = models.DateField(auto_now_add=True)
+    type_ticket = models.CharField(max_length=50)
+    seat = models.CharField(max_length=10)
+    status = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.event} - {self.user.username} - {self.type_ticket}"
+
