@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
 from .models import Event, User, Ticket
+from django.views.decorators.http import require_POST
 
 
 def register(request):
@@ -165,3 +166,10 @@ def ticket_edit(request, ticket_id):
             'ticket': ticket,
             'events': events
         })
+    
+
+@require_POST
+def ticket_delete(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    ticket.delete()
+    return redirect('ticket_detail')
