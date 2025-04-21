@@ -10,6 +10,10 @@
     <ul>
         {% for t in tickets %}
         <li>{{t.user}} - {{t.event}} - {{t.price}} - {{t.buy_date}} - {{t.type_ticket}} - {{t.seat}} - {{t.status}} </li>
+
+        <a href="{% url 'ticket_edit' t.id %}">Editar</a>
+
+       
         {% endfor %}
     </ul>
 

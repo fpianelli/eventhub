@@ -146,3 +146,22 @@ def ticket_form(request):
         ticket.save()
         return redirect('ticket_detail')
     return render(request, "app/ticket_form.html", {'events': events, 'ticket': None})
+
+def ticket_edit(request, ticket_id):
+
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.method == 'POST':
+        ticket.price = request.POST.get('price')
+        ticket.type_ticket = request.POST.get('type_ticket')
+        ticket.seat = request.POST.get('seat')
+        ticket.status = request.POST.get('status')
+        ticket.event = get_object_or_404(Event, id=request.POST.get('event'))
+        ticket.save()
+        return redirect('ticket_detail')
+    else:
+        events = Event.objects.all()
+        return render(request, 'app/ticket_form.html', {
+            'ticket': ticket,
+            'events': events
+        })

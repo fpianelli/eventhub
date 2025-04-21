@@ -15,7 +15,7 @@
     
                 <div class="card">
                     <div class="card-body">
-                        <form action="{% url 'ticket_form' %}" method="POST">
+                        <form action="{% if ticket %}{% url 'ticket_edit' ticket.id %}{% else %}{% url 'ticket_form' %}{% endif %}" method="POST">
                             {% csrf_token %}
                             <div class="vstack gap-3">
                                 <div>
@@ -63,7 +63,7 @@
                                     <label for="event" class="form-label">Evento</label>
                                     <select class="form-control" id="event" name="event">
                                         {% for event in events %}
-                                            <option value="{{ event.id }}" {% if event.id == ticket.event.id %}selected{% endif %}>
+                                            <option value="{{ event.id }}" {% if ticket and event.id == ticket.event.id %}selected{% endif %}>
                                                 {{ event.title }}
                                             </option>
                                         {% endfor %}
@@ -72,7 +72,7 @@
     
                                 <div>
                                     <button type="submit" class="btn btn-primary">
-                                            Crear Ticket
+                                        {% if ticket %}Guardar cambios{% else %}Crear Ticket{% endif %}
                                     </button>
                                 </div>
                             </div>
