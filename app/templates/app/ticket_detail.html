@@ -3,9 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title></title>
 </head>
 <body>
-    <h1>Acá mostraremos todos los tickets</h1>
+    <h1>Listado de tickets</h1>
+    <ul>
+        {% for t in tickets %}
+        <li>{{t.user}} - {{t.event}} - {{t.price}} - {{t.buy_date}} - {{t.type_ticket}} - {{t.seat}} - {{t.status}} </li>
+        {% endfor %}
+    </ul>
+
+    <div>
+        <a href="{% url 'ticket_form' %}" class="btn btn-primary">
+            Ir a crear ticket
+        </a>
+    </div>
+    
 </body>
 </html>

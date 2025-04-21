@@ -127,7 +127,22 @@ def event_form(request, id=None):
     )
 
 def ticket_detail(request):
-    return render(request, "app/ticket_detail.html")
+    tickets = Ticket.objects.all().order_by("buy_date")
+    return render(request, "app/ticket_detail.html", {"tickets": tickets})
 
 def ticket_form(request):
-    return render(request, "app/ticket_form.html")
+
+    events = Event.objects.all()
+    
+    if request.method == 'POST':
+        ticket = Ticket(
+            user=request.user,
+            price=request.POST.get('price'),
+            type_ticket=request.POST.get('type_ticket'),
+            seat=request.POST.get('seat'),
+            status=request.POST.get('status'),
+            event=get_object_or_404(Event, id=request.POST.get('event'))
+        )
+        ticket.save()
+        return redirect('ticket_detail')
+    return render(request, "app/ticket_form.html", {'events': events, 'ticket': None})

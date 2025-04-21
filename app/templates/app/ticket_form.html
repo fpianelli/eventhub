@@ -3,9 +3,86 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title></title>
 </head>
 <body>
-    <h1>Estamos en la página para dar de alta un ticket</h1>
+    <div class="container mt-5">
+        <div class="row">
+            <div class="col-md-8 offset-md-2">
+                <h1 class="mb-4">
+                        Crear Ticket
+                </h1>
+    
+                <div class="card">
+                    <div class="card-body">
+                        <form action="{% url 'ticket_form' %}" method="POST">
+                            {% csrf_token %}
+                            <div class="vstack gap-3">
+                                <div>
+                                    <label for="price" class="form-label">Precio</label>
+                                    <input class="form-control"
+                                        id="price"
+                                        required=""
+                                        type="number"
+                                        step="0.01"
+                                        value="{{ ticket.price }}"
+                                        name="price" />
+                                </div>
+    
+                                <div>
+                                    <label for="type_ticket" class="form-label">Tipo de Ticket</label>
+                                    <input class="form-control"
+                                        id="type_ticket"
+                                        required=""
+                                        type="text"
+                                        value="{{ ticket.type_ticket }}"
+                                        name="type_ticket" />
+                                </div>
+
+                                <div>
+                                    <label for="seat" class="form-label">Asiento</label>
+                                    <input class="form-control"
+                                        id="seat"
+                                        required=""
+                                        type="text"
+                                        value="{{ ticket.seat }}"
+                                        name="seat" />
+                                </div>
+    
+                                <div>
+                                    <label for="status" class="form-label">Estado</label>
+                                    <input class="form-control"
+                                        id="status"
+                                        required=""
+                                        type="text"
+                                        value="{{ ticket.status }}"
+                                        name="status" />
+                                </div>
+    
+                                <div>
+                                    <label for="event" class="form-label">Evento</label>
+                                    <select class="form-control" id="event" name="event">
+                                        {% for event in events %}
+                                            <option value="{{ event.id }}" {% if event.id == ticket.event.id %}selected{% endif %}>
+                                                {{ event.title }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+    
+                                <div>
+                                    <button type="submit" class="btn btn-primary">
+                                            Crear Ticket
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
 </body>
 </html>
