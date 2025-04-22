@@ -40,11 +40,13 @@
                             <p class="mb-0">{{ event.organizer }}</p>
                         </div>
                     </div>
+                    {% if not user_is_organizer %}
                     <div class="mt-4">
                         <a href="{% url 'ticket_form' event.id %}" class="btn btn-success">
                             Comprar Entradas
                         </a>
                     </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

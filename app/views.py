@@ -72,7 +72,7 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    return render(request, "app/event_detail.html", {"event": event})
+    return render(request, "app/event_detail.html", {"event": event, "user_is_organizer": request.user.is_organizer})
 
 
 @login_required
@@ -127,10 +127,15 @@ def event_form(request, id=None):
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
 
+@login_required
 def ticket_detail(request):
-    tickets = Ticket.objects.filter(user=request.user).order_by("buy_date")
-    return render(request, "app/ticket_detail.html", {"tickets": tickets})
+    if request.user.is_organizer:
+        tickets = Ticket.objects.filter(event__organizer=request.user).order_by("buy_date")
+    else:
+        tickets = Ticket.objects.filter(user=request.user).order_by("buy_date")
+    return render(request, "app/ticket_detail.html", {"tickets": tickets, "is_organizer": request.user.is_organizer,})
 
+@login_required
 def ticket_form(request, event_id):
 
     event = get_object_or_404(Event, id=event_id)
@@ -152,6 +157,7 @@ def ticket_form(request, event_id):
         return redirect('ticket_detail')
     return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False,})
 
+@login_required
 def ticket_edit(request, ticket_id):
 
     ticket = get_object_or_404(Ticket, id=ticket_id)
@@ -176,6 +182,7 @@ def ticket_edit(request, ticket_id):
     
 
 @require_POST
+@login_required
 def ticket_delete(request, ticket_id):
     ticket = get_object_or_404(Ticket, id=ticket_id)
     ticket.delete()
