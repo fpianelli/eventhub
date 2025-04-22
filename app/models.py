@@ -83,3 +83,39 @@ class Comment(models.Model):
 
     def __str__(self):
         return f"{self.title} - {self.user.username}"
+    
+    @classmethod
+    def validate(cls, title, text):
+        errors = {}
+
+        if title == "":
+            errors["title"] = "Por favor ingrese un título"
+
+        if text == "":
+            errors["text"] = "Por favor ingrese un comentario"
+
+        return errors
+    
+    @classmethod
+    def new(cls, title, text, event, user):
+        errors = Comment.validate(title, text)
+
+        if len(errors.keys()) > 0:
+            return False, errors
+        
+        Comment.objects.create(
+            title=title,
+            text=text,
+            event=event,
+            user=user,
+        )
+
+        return True, None
+    
+    def update(self, title, text, event, user):
+        self.title = title or self.title
+        self.text = text or self.text
+        self.event = event or self.event
+        self.user = user or self.user
+
+        self.save()
