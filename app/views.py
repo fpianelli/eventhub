@@ -150,25 +150,28 @@ def ticket_form(request, event_id):
         )
         ticket.save()
         return redirect('ticket_detail')
-    return render(request, "app/ticket_form.html", {'event': event, 'ticket': None})
+    return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False,})
 
 def ticket_edit(request, ticket_id):
 
     ticket = get_object_or_404(Ticket, id=ticket_id)
 
     if request.method == 'POST':
-        ticket.price = request.POST.get('price')
+
+        try:
+            quantity = int(request.POST.get('quantity'))
+        except ValueError:
+            return render(request, "app/ticket_form.html", {'event': ticket.event, 'error': 'Cantidad no válida'})
+
         ticket.type_ticket = request.POST.get('type_ticket')
-        ticket.seat = request.POST.get('seat')
-        ticket.status = request.POST.get('status')
-        ticket.event = get_object_or_404(Event, id=request.POST.get('event'))
+        ticket.quantity = quantity
         ticket.save()
         return redirect('ticket_detail')
     else:
-        events = Event.objects.all()
         return render(request, 'app/ticket_form.html', {
             'ticket': ticket,
-            'events': events
+            'event': ticket.event,
+            'is_edit': True,
         })
     
 

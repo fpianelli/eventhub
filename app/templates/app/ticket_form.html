@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% block content %}
 <div class="container">
-    <h1>Formulario de Compra de Entradas para {{ event.title }}</h1>
+    <h1>{% if is_edit %}Edición de Tickets para {{ event.title }}{% else %}Compra de Tickets para {{ event.title }}{% endif %}</h1>
 
     <div class="row">
         <div class="card">
@@ -39,7 +39,6 @@
                 <form method="POST">
                     {% csrf_token %}
 
-                    <!-- Selección de tipo de ticket -->
                     <div class="mb-3">
                         <label for="type_ticket" class="form-label">Tipo de Entrada</label>
                         <select class="form-control" id="type_ticket" name="type_ticket" required>
@@ -48,75 +47,76 @@
                         </select>
                     </div>
 
-                    <!-- Cantidad de Entradas -->
                     <div class="mb-3">
                         <label for="quantity" class="form-label">Cantidad de Entradas</label>
                         <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
                     </div>
 
-                    <hr>
-                    <h6 class="mb-3">Datos de Tarjeta</h6>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label for="card_number" class="form-label">Número de Tarjeta</label>
-                                <input type="text"
-                                       id="card_number"
-                                       name="card_number"
-                                       class="form-control"
-                                       maxlength="16"
-                                       inputmode="numeric"
-                                       pattern="[0-9]{13,16}"
-                                       placeholder="1234 5678 9012 3456"
-                                       title="Ingresa el número de tu tarjeta"
-                                       required>
+                    {% if not is_edit %}
+                        <hr>
+                        <h6 class="mb-3">Datos de Tarjeta</h6>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="card_number" class="form-label">Número de Tarjeta</label>
+                                    <input type="text"
+                                        id="card_number"
+                                        name="card_number"
+                                        class="form-control"
+                                        maxlength="16"
+                                        inputmode="numeric"
+                                        pattern="[0-9]{13,16}"
+                                        placeholder="1234 5678 9012 3456"
+                                        title="Ingresa el número de tu tarjeta"
+                                        required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="expiry_date" class="form-label">Fecha de Expiración</label>
+                                    <input type="text"
+                                        id="expiry_date"
+                                        name="expiry_date"
+                                        class="form-control"
+                                        placeholder="MM/AA"
+                                        pattern="(0[1-9]|1[0-2])\/\d{2}"
+                                        title="Formato MM/AA"
+                                        required>
+                                </div>
+                                <div class="col-md-3 mb-3">
+                                    <label for="cvv" class="form-label">CVV</label>
+                                    <input type="text"
+                                        id="cvv"
+                                        name="cvv"
+                                        class="form-control"
+                                        maxlength="4"
+                                        inputmode="numeric"
+                                        pattern="\d{3,4}"
+                                        placeholder="123"
+                                        title="Código de seguridad de 3 o 4 dígitos"
+                                        required>
+                                </div>
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="expiry_date" class="form-label">Fecha de Expiración</label>
+                        
+                            <div class="mb-3">
+                                <label for="cardholder_name" class="form-label">Titular de la Tarjeta</label>
                                 <input type="text"
-                                       id="expiry_date"
-                                       name="expiry_date"
-                                       class="form-control"
-                                       placeholder="MM/AA"
-                                       pattern="(0[1-9]|1[0-2])\/\d{2}"
-                                       title="Formato MM/AA"
-                                       required>
+                                    id="cardholder_name"
+                                    name="cardholder_name"
+                                    class="form-control"
+                                    placeholder="Nombre como figura en la tarjeta"
+                                    required>
                             </div>
-                            <div class="col-md-3 mb-3">
-                                <label for="cvv" class="form-label">CVV</label>
-                                <input type="text"
-                                       id="cvv"
-                                       name="cvv"
-                                       class="form-control"
-                                       maxlength="4"
-                                       inputmode="numeric"
-                                       pattern="\d{3,4}"
-                                       placeholder="123"
-                                       title="Código de seguridad de 3 o 4 dígitos"
-                                       required>
+                        
+                            <div class="form-check mb-4">
+                                <input class="form-check-input"
+                                    type="checkbox"
+                                    id="terms_check"
+                                    required>
+                                <label class="form-check-label" for="terms_check">
+                                    Acepto los <a href="#">términos y condiciones</a>.
+                                </label>
                             </div>
-                        </div>
-                    
-                        <div class="mb-3">
-                            <label for="cardholder_name" class="form-label">Titular de la Tarjeta</label>
-                            <input type="text"
-                                   id="cardholder_name"
-                                   name="cardholder_name"
-                                   class="form-control"
-                                   placeholder="Nombre como figura en la tarjeta"
-                                   required>
-                        </div>
-                    
-                        <div class="form-check mb-4">
-                            <input class="form-check-input"
-                                   type="checkbox"
-                                   id="terms_check"
-                                   required>
-                            <label class="form-check-label" for="terms_check">
-                                Acepto los <a href="#">términos y condiciones</a>.
-                            </label>
-                        </div>
+                    {% endif %}
 
-                    <button type="submit" class="btn btn-primary">Comprar Entradas</button>
+                    <button type="submit" class="btn btn-primary"> {% if is_edit %}Guardar Cambios{% else %}Comprar Entradas{% endif %}</button>
                 </form>
             </div>
         </div>
