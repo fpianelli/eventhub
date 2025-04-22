@@ -150,7 +150,7 @@ def ticket_form(request, event_id):
         )
         ticket.save()
         return redirect('ticket_detail')
-    return render(request, "app/ticket_form.html", {'events': events, 'ticket': None})
+    return render(request, "app/ticket_form.html", {'event': event, 'ticket': None})
 
 def ticket_edit(request, ticket_id):
 
