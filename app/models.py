@@ -84,6 +84,8 @@ class Comment(models.Model):
     def __str__(self):
         return f"{self.title} - {self.user.username}"
     
+    #Validacion de los campos del comentario
+
     @classmethod
     def validate(cls, title, text):
         errors = {}
@@ -96,6 +98,8 @@ class Comment(models.Model):
 
         return errors
     
+    #Metodo para crear un comentario
+
     @classmethod
     def new(cls, title, text, event, user):
         errors = Comment.validate(title, text)
@@ -112,10 +116,11 @@ class Comment(models.Model):
 
         return True, None
     
-    def update(self, title, text, event, user):
-        self.title = title or self.title
-        self.text = text or self.text
-        self.event = event or self.event
-        self.user = user or self.user
+    #Metodo para actualizar un comentario
+    # def update(self, title, text, event, user):
+    #     self.title = title or self.title
+    #     self.text = text or self.text
+    #     self.event = event or self.event
+    #     self.user = user or self.user
 
-        self.save()
+    #     self.save()

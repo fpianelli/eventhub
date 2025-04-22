@@ -44,5 +44,53 @@
             </div>
         </div>
     </div>
+
+    {# Comentarios #}
+
+    <div class="row mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Comentarios <span class="badge bg-secondary">({{ comments.count }})</span></h2>
+
+                {# Nuevo comentario #}
+                <div class="mb-4">
+                    <form method="POST">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            
+                            <input type="text" class="form-control" id="title" name="title" placeholder="Título" required>
+                        </div>
+                        <div class="mb-3">
+                            
+                            <textarea class="form-control" id="text" name="text" rows="3" placeholder="Escribe tu comentario..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i>Enviar comentario
+                        </button>
+                    </form>
+                </div>
+
+                {# Lista de comentarios #}
+                {% for comment in comments %}
+                <div class="mb-4 p-3 border-bottom">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person text-primary me-2"></i>
+                            <h4 class="mb-0 fw-bold">{{ comment.user.username }}</h4>
+                        </div>
+                        <small class="text-muted">{{ comment.created_at|date:"j M Y, H:i" }}</small>
+                    </div>
+                    <h5 class="mb-2 text-primary fw-bold">{{ comment.title }}</h5>
+                    <p class="mb-3">{{ comment.text }}</p>
+                </div>
+                {% empty %}
+                <p class="text-muted">No hay comentarios aún.</p>
+                {% endfor %}
+                </div>
+            </div>
+        </div>    
+    </div>
 </div>
 {% endblock %}
+
+
