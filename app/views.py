@@ -77,6 +77,8 @@ def event_detail(request, id):
         title = request.POST.get("title")
         text = request.POST.get("text")
         Comment.new(title, text, event, request.user)
+        #Redirige a la misma página y evita la duplicación de comentarios al recargar la página
+        return redirect('event_detail', id=id)
     
     #Ordena los comentarios por su momento de creación
     comments = event.comments.all().order_by("-created_at")
