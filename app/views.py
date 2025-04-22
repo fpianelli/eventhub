@@ -131,18 +131,22 @@ def ticket_detail(request):
     tickets = Ticket.objects.all().order_by("buy_date")
     return render(request, "app/ticket_detail.html", {"tickets": tickets})
 
-def ticket_form(request):
+def ticket_form(request, event_id):
 
-    events = Event.objects.all()
+    event = get_object_or_404(Event, id=event_id)
     
     if request.method == 'POST':
+
+        try:
+            quantity = int(request.POST.get('quantity'))
+        except ValueError:
+            return render(request, "app/ticket_form.html", {'event': event, 'error': 'Cantidad no válida'})
+
         ticket = Ticket(
             user=request.user,
-            price=request.POST.get('price'),
             type_ticket=request.POST.get('type_ticket'),
-            seat=request.POST.get('seat'),
-            status=request.POST.get('status'),
-            event=get_object_or_404(Event, id=request.POST.get('event'))
+            quantity=quantity,
+            event=event
         )
         ticket.save()
         return redirect('ticket_detail')

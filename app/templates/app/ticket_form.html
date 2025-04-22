@@ -1,88 +1,27 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title></title>
-</head>
-<body>
-    <div class="container mt-5">
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <h1 class="mb-4">
-                    {% if ticket %}Editar ticket{% else %}Crear Ticket{% endif %}
-                </h1>
-    
-                <div class="card">
-                    <div class="card-body">
-                        <form action="{% if ticket %}{% url 'ticket_edit' ticket.id %}{% else %}{% url 'ticket_form' %}{% endif %}" method="POST">
-                            {% csrf_token %}
-                            <div class="vstack gap-3">
-                                <div>
-                                    <label for="price" class="form-label">Precio</label>
-                                    <input class="form-control"
-                                        id="price"
-                                        required=""
-                                        type="number"
-                                        step="0.01"
-                                        value="{{ ticket.price }}"
-                                        name="price" />
-                                </div>
-    
-                                <div>
-                                    <label for="type_ticket" class="form-label">Tipo de Ticket</label>
-                                    <input class="form-control"
-                                        id="type_ticket"
-                                        required=""
-                                        type="text"
-                                        value="{{ ticket.type_ticket }}"
-                                        name="type_ticket" />
-                                </div>
+{% extends 'base.html' %}
+{% block content %}
+<div class="container">
+    <h1>Formulario de Compra de Entradas para {{ event.title }}</h1>
 
-                                <div>
-                                    <label for="seat" class="form-label">Asiento</label>
-                                    <input class="form-control"
-                                        id="seat"
-                                        required=""
-                                        type="text"
-                                        value="{{ ticket.seat }}"
-                                        name="seat" />
-                                </div>
-    
-                                <div>
-                                    <label for="status" class="form-label">Estado</label>
-                                    <input class="form-control"
-                                        id="status"
-                                        required=""
-                                        type="text"
-                                        value="{{ ticket.status }}"
-                                        name="status" />
-                                </div>
-    
-                                <div>
-                                    <label for="event" class="form-label">Evento</label>
-                                    <select class="form-control" id="event" name="event">
-                                        {% for event in events %}
-                                            <option value="{{ event.id }}" {% if ticket and event.id == ticket.event.id %}selected{% endif %}>
-                                                {{ event.title }}
-                                            </option>
-                                        {% endfor %}
-                                    </select>
-                                </div>
-    
-                                <div>
-                                    <button type="submit" class="btn btn-primary">
-                                        {% if ticket %}Guardar cambios{% else %}Crear Ticket{% endif %}
-                                    </button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+    <form method="POST">
+        {% csrf_token %}
+
+        <!-- Selección de tipo de ticket -->
+        <div class="mb-3">
+            <label for="type_ticket" class="form-label">Tipo de Entrada</label>
+            <select class="form-control" id="type_ticket" name="type_ticket" required>
+                <option value="GENERAL">General</option>
+                <option value="VIP">VIP</option>
+            </select>
         </div>
-    </div>
-    
 
-</body>
-</html>
+        <!-- Cantidad de Entradas -->
+        <div class="mb-3">
+            <label for="quantity" class="form-label">Cantidad de Entradas</label>
+            <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Comprar Entradas</button>
+    </form>
+</div>
+{% endblock %}

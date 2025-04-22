@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.conf import settings
+import uuid
 
 
 class User(AbstractUser):
@@ -78,11 +79,18 @@ class Event(models.Model):
 class Ticket (models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     event = models.ForeignKey(Event, on_delete=models.CASCADE)
-    price = models.FloatField()
     buy_date = models.DateField(auto_now_add=True)
-    type_ticket = models.CharField(max_length=50)
-    seat = models.CharField(max_length=10)
-    status = models.CharField(max_length=20)
+    type_ticket = models.CharField(
+        max_length=50,
+        choices=[("GENERAL", "General"), ("VIP", "VIP")]
+        )
+    ticket_code = models.CharField(max_length=100, unique=True, editable=False, default=uuid.uuid4)
+    quantity = models.IntegerField(default=1)
+
+    def save(self, *args, **kwargs):
+        if not self.ticket_code:
+            self.ticket_code = str(uuid.uuid4())
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.event} - {self.user.username} - {self.type_ticket}"
