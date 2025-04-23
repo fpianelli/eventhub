@@ -32,13 +32,18 @@
         </div>
     </div>
 
-
+    <div class="row my-4">
+        <div class="col">
+        </div>
+    </div>
+ 
     <div class="row">
         <div class="card mb-4">
             <div class="card-body">
                 <form method="POST">
                     {% csrf_token %}
 
+                    <h6 class="mb-3">Compra de entradas</h6>
                     <div class="mb-3">
                         <label for="type_ticket" class="form-label">Tipo de Entrada</label>
                         <select class="form-control" id="type_ticket" name="type_ticket">
@@ -53,11 +58,39 @@
 
                     <div class="mb-3">
                         <label for="quantity" class="form-label">Cantidad de Entradas</label>
-                        <input class="form-control" id="quantity" name="quantity">
+                        <input class="form-control" id="quantity" name="quantity" type="number" min="1">
                         {% if errors.quantity %}
                             <p style="color:red">{{ errors.quantity }}</p>
                         {% endif %}
                     </div>
+
+                    <hr>
+                    <div class="mb-4">
+                        <h6 class="mb-3">Resumen de compra</h6>
+                        <ul class="list-group">
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Precio por entrada:</span>
+                                <span id="precio-unitario">$0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Cantidad:</span>
+                                <span id="resumen-cantidad">0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Subtotal:</span>
+                                <span id="subtotal">$0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span>Impuestos (10%):</span>
+                                <span id="impuestos">$0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between fw-bold">
+                                <span>Total:</span>
+                                <span id="total">$0</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
 
                     {% if not is_edit %}
                         <hr>
@@ -72,8 +105,8 @@
                                         maxlength="16"
                                         inputmode="numeric"
                                         pattern="[0-9]{13,16}"
-                                        placeholder="1234 5678 9012 3456"
-                                        title="Ingresa el número de tu tarjeta"
+                                        placeholder="1234567890123456"
+                                        title="Ingresa 16 dígitos con o sin espacios (ej. 1234 5678 9012 3456)"
                                         required>
                                 </div>
                                 <div class="col-md-3 mb-3">
@@ -93,7 +126,7 @@
                                         id="cvv"
                                         name="cvv"
                                         class="form-control"
-                                        maxlength="4"
+                                        maxlength="3"
                                         inputmode="numeric"
                                         pattern="\d{3,4}"
                                         placeholder="123"
@@ -123,10 +156,50 @@
                             </div>
                     {% endif %}
 
-                    <button type="submit" class="btn btn-primary"> {% if is_edit %}Guardar Cambios{% else %}Comprar Entradas{% endif %}</button>
+                    <button type="submit" class="btn btn-primary btn-lg w-100"> {% if is_edit %}Guardar Cambios{% else %}Confirmar Compra{% endif %}</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+
+    document.getElementById("quantity").addEventListener("keydown", function(event) {
+            event.preventDefault();  // Prevenir que el número sea ingresado por teclado
+        });
+
+    const precios = {
+        GENERAL: 45.99,
+        VIP: 65.99
+    };
+
+    const tipoSelect = document.getElementById("type_ticket");
+    const cantidadInput = document.getElementById("quantity");
+
+    const precioUnitarioEl = document.getElementById("precio-unitario");
+    const resumenCantidadEl = document.getElementById("resumen-cantidad");
+    const subtotalEl = document.getElementById("subtotal");
+    const impuestosEl = document.getElementById("impuestos");
+    const totalEl = document.getElementById("total");
+
+    function actualizarResumen() {
+        const tipo = tipoSelect.value;
+        const cantidad = parseInt(cantidadInput.value) || 0;
+        const precioUnitario = precios[tipo] || 0;
+        const subtotal = precioUnitario * cantidad;
+        const impuestos = subtotal * 0.10;
+        const total = subtotal + impuestos;
+
+        precioUnitarioEl.textContent = `$${precioUnitario}`;
+        resumenCantidadEl.textContent = cantidad;
+        subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+        impuestosEl.textContent = `$${impuestos.toFixed(2)}`;
+        totalEl.textContent = `$${total.toFixed(2)}`;
+    }
+
+    tipoSelect.addEventListener("change", actualizarResumen);
+    cantidadInput.addEventListener("input", actualizarResumen);
+</script>
+
 {% endblock %}
