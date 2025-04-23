@@ -106,7 +106,7 @@
                                         inputmode="numeric"
                                         pattern="[0-9]{13,16}"
                                         placeholder="1234567890123456"
-                                        title="Ingresa 16 dígitos con o sin espacios (ej. 1234 5678 9012 3456)"
+                                        title="Ingresa 16 dígitos sin espacios (ej. 1234567890123456)"
                                         required>
                                 </div>
                                 <div class="col-md-3 mb-3">
@@ -166,8 +166,9 @@
 <script>
 
     document.getElementById("quantity").addEventListener("keydown", function(event) {
-            event.preventDefault();  // Prevenir que el número sea ingresado por teclado
+            event.preventDefault();  // Prevenir que el número sea ingresado por teclado.
         });
+
 
     const precios = {
         GENERAL: 45.99,
@@ -183,6 +184,7 @@
     const impuestosEl = document.getElementById("impuestos");
     const totalEl = document.getElementById("total");
 
+    // Este script permite calcular dinamicamente el subtotal y el total de la compra. 
     function actualizarResumen() {
         const tipo = tipoSelect.value;
         const cantidad = parseInt(cantidadInput.value) || 0;
