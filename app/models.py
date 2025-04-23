@@ -94,4 +94,26 @@ class Ticket (models.Model):
 
     def __str__(self):
         return f"{self.event} - {self.user.username} - {self.type_ticket}"
+    
+    @classmethod
+    def validate_ticket(cls, type_ticket, quantity):
+
+        errors = {}
+
+        if not type_ticket:
+            errors["type_ticket"] = "El tipo de entrada es requerido"
+        elif type_ticket not in dict(cls._meta.get_field('type_ticket').choices):
+            errors["type_ticket"] = "El tipo de entrada no es válido"
+
+        if quantity is None:
+            errors["quantity"] = "La cantidad es requerida"
+        else:
+            try:
+                quantity = int(quantity)
+                if quantity <= 0:
+                    errors["quantity"] = "La cantidad debe ser mayor que cero"
+            except ValueError:
+                errors["quantity"] = "La cantidad debe ser un número entero válido"
+        
+        return errors
 

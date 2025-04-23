@@ -41,15 +41,22 @@
 
                     <div class="mb-3">
                         <label for="type_ticket" class="form-label">Tipo de Entrada</label>
-                        <select class="form-control" id="type_ticket" name="type_ticket" required>
-                            <option value="GENERAL">General</option>
-                            <option value="VIP">VIP</option>
+                        <select class="form-control" id="type_ticket" name="type_ticket">
+                            <option value="" disabled selected>Seleccioná una opción</option>
+                            <option value="GENERAL">Entrada general</option>
+                            <option value="VIP">Entrada VIP</option>
                         </select>
+                        {% if errors.type_ticket %}
+                            <p style="color:red">{{ errors.type_ticket }}</p>
+                        {% endif %}
                     </div>
 
                     <div class="mb-3">
                         <label for="quantity" class="form-label">Cantidad de Entradas</label>
-                        <input type="number" class="form-control" id="quantity" name="quantity" min="1" required>
+                        <input class="form-control" id="quantity" name="quantity">
+                        {% if errors.quantity %}
+                            <p style="color:red">{{ errors.quantity }}</p>
+                        {% endif %}
                     </div>
 
                     {% if not is_edit %}

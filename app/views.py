@@ -142,20 +142,28 @@ def ticket_form(request, event_id):
     
     if request.method == 'POST':
 
-        try:
-            quantity = int(request.POST.get('quantity'))
-        except ValueError:
-            return render(request, "app/ticket_form.html", {'event': event, 'error': 'Cantidad no válida'})
+        type_ticket = request.POST.get('type_ticket')
+        quantity = request.POST.get('quantity')
+
+        errors = Ticket.validate_ticket(type_ticket, quantity)
+
+        if len(errors) > 0:
+            return render(request, "app/ticket_form.html", {
+                'event': event,
+                'errors': errors,
+                'data': request.POST,
+                'is_edit': False,
+            })
 
         ticket = Ticket(
             user=request.user,
-            type_ticket=request.POST.get('type_ticket'),
-            quantity=quantity,
+            type_ticket=type_ticket,
+            quantity=int(quantity),
             event=event
         )
         ticket.save()
         return redirect('ticket_detail')
-    return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False,})
+    return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False, 'data': {}, 'errors': {},})
 
 @login_required
 def ticket_edit(request, ticket_id):
@@ -164,13 +172,22 @@ def ticket_edit(request, ticket_id):
 
     if request.method == 'POST':
 
-        try:
-            quantity = int(request.POST.get('quantity'))
-        except ValueError:
-            return render(request, "app/ticket_form.html", {'event': ticket.event, 'error': 'Cantidad no válida'})
+        type_ticket = request.POST.get('type_ticket')
+        quantity = request.POST.get('quantity')
 
-        ticket.type_ticket = request.POST.get('type_ticket')
-        ticket.quantity = quantity
+        errors = Ticket.validate_ticket(type_ticket, quantity)
+
+        if len(errors) > 0:
+            return render(request, "app/ticket_form.html", {
+                'ticket': ticket,
+                'event': ticket.event,
+                'errors': errors,
+                'data': request.POST,
+                'is_edit': True,
+            })
+
+        ticket.type_ticket = type_ticket
+        ticket.quantity = int(quantity)
         ticket.save()
         return redirect('ticket_detail')
     else:
@@ -178,6 +195,8 @@ def ticket_edit(request, ticket_id):
             'ticket': ticket,
             'event': ticket.event,
             'is_edit': True,
+            'data': {},
+            'errors': {},
         })
     
 
