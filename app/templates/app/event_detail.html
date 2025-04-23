@@ -120,7 +120,7 @@
                            class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil me-1"></i>Editar
                         </a>
-                        <form method="POST" style="display: inline;">
+                        <form method="POST" class="delete-comment-form" data-comment-id="{{ comment.id }}">
                             {% csrf_token %}
                             <input type="hidden" name="delete_comment" value="1">
                             <input type="hidden" name="comment_id" value="{{ comment.id }}">
@@ -140,14 +140,5 @@
     </div>
 </div>
 
-<style>
-    .comment-container {
-        transition: all 0.3s ease;
-    }
-    .edit-comment-form {
-        background-color: #f8f9fa;
-        padding: 15px;
-        border-radius: 8px;
-    }
-</style>
+
 {% endblock %}
