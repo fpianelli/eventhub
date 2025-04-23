@@ -71,23 +71,53 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    
-    #Crear un comentario
-    if request.method == "POST":
-        title = request.POST.get("title")
-        text = request.POST.get("text")
-        Comment.new(title, text, event, request.user)
-        #Redirige a la misma página y evita la duplicación de comentarios al recargar la página
-        return redirect('event_detail', id=id)
-    
-    #Ordena los comentarios por su momento de creación
     comments = event.comments.all().order_by("-created_at")
-    return render(
-        request, 
-        "app/event_detail.html", 
-        {
+    
+    #Eliminar comentario
+    if "delete_comment" in request.POST:
+        comment_id = request.POST.get("comment_id")
+        comment = get_object_or_404(Comment, pk=comment_id)
+        if comment.user == request.user:
+            comment.delete()
+        return redirect("event_detail", id=id)
+    
+    #Editar comentario
+    edit_comment = None
+    if request.method == "POST":
+        form_type = request.POST.get("form_type")
+        
+        if form_type == "edit_comment":  #Guardar edición
+            comment_id = request.POST.get("comment_id")
+            comment = get_object_or_404(Comment, pk=comment_id)
+            if comment.user == request.user:
+                comment.title = request.POST.get("title")
+                comment.text = request.POST.get("text")
+                comment.save()
+            return redirect("event_detail", id=id)
+        
+        #Crear nuevo comentario
+        elif form_type == "new_comment":  
+            title = request.POST.get("title")
+            text = request.POST.get("text")
+            Comment.objects.create(
+                title=title,
+                text=text,
+                event=event,
+                user=request.user
+            )
+            return redirect("event_detail", id=id)
+    
+    #Carga comentario para editar
+    edit_comment_id = request.GET.get("edit_comment")
+    if edit_comment_id:
+        edit_comment = get_object_or_404(Comment, pk=edit_comment_id)
+        if edit_comment.user != request.user:
+            return redirect("event_detail", id=id)
+    
+    return render(request, "app/event_detail.html", {
         "event": event,
-        "comments":comments,
+        "comments": comments,
+        "edit_comment": edit_comment,
         "user_is_organizer": request.user.is_organizer
     })
 
