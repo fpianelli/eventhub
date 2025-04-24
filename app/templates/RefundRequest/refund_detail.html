@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>{{ refund.client }} ${{ refund.amount }}</h1>
+            <div>
+            {% if user_is_organizer %}
+                <a
+                    href="{% url 'refund_edit' event.id %}"
+                    class="btn btn-outline-primary me-2"
+                >
+                    <i class="bi bi-pencil me-1"></i>Editar
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="row">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Detalles de la solicitud</h5>
+                <p class="card-text">{{ refund.reason }}</p>
+                <div class="mt-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-light rounded-circle p-2 me-3">
+                            <i class="bi bi-calendar-event text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Fecha y Hora de solicitud</h6>
+                            <p class="mb-0">{{ refund.created_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-light rounded-circle p-2 me-3">
+                            <i class="bi bi-person text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Estado de aprobación</h6>
+                            <p class="mb-0">
+                                {% if refund.approval %}
+                                    ✅ Aprobado
+                                {% else %}
+                                    ❌ No aprobado
+                                {% endif %}
+                            </p>
+                            {% if refund.approval and refund.approved_at %}
+                                <h6 class="mt-2 mb-0">Fecha de aprobación</h6>
+                                <p class="mb-0">{{ refund.approved_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

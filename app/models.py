@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from django.utils import timezone
 
 
 class User(AbstractUser):
@@ -75,12 +76,47 @@ class Event(models.Model):
         self.save()
 
 class RefundRequest(models.Model):
-    approval = models.BooleanField(default=False)
+    approved = models.BooleanField(default=False)
     approval_date = models.DateTimeField(null=True, blank=True)
-    amount = models.FloatField()
+    ticket_code = models.CharField(max_length=100, default="")
     reason = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
     def __str__(self):
-        return f"RefundRequest {self.pk} - User: {self.client.username} - Amount: {self.amount} - Approved: {self.approval}"
+        return f"RefundRequest {self.pk} - User: {self.client.username} - Ticket: {self.ticket_code} - Approved: {self.approved}"
+    
+    @classmethod
+    def create_refund(cls, client, tC, reason, approval=False):
+        return cls.objects.create(
+            client=client,
+            ticket_code=tC,
+            reason=reason,
+            approved=approval,
+        )
+
+    def cancel_refund(self):
+        self.delete()
+        
+
+    def approve_refund(self):
+        self.approved = True
+        self.approval_date = timezone.now()
+        self.save(update_fields=["approved", "approval_date"])
+
+    def reject_refund(self):
+        self.approved = False
+        self.approval_date = None
+        self.save(update_fields=["approved", "approval_date"])
+    
+    def edit_refund(self, tC, reason, client):
+        self.ticket_code = tC or self.ticket_code
+        self.reason = reason or self.reason
+        self.client = client or self.client
+
+        self.save(update_fields=["ticket_code", "reason", "client"])
+    
+     
+
+    
+    
         
