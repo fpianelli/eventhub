@@ -172,3 +172,26 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+@login_required
+def my_events_comments(request):
+    if not request.user.is_organizer:
+        return redirect('events')
+    
+    #Eliminar comentario
+    if request.method == "POST" and "delete_comment" in request.POST:
+        comment_id = request.POST.get("comment_id")
+        comment = get_object_or_404(Comment, pk=comment_id)
+        
+        #Verificar que el comentario pertenece a un evento del organizador
+        if comment.event.organizer == request.user:
+            comment.delete()
+            return redirect("my_events_comments")
+    
+    #Obtener todos los comentarios de los eventos del organizador 
+    comments = Comment.objects.filter(event__organizer=request.user).select_related('event', 'user').order_by('-created_at')
+    
+    return render(request, "app/my_events_comments.html", {
+        "comments": comments,
+        "user_is_organizer": request.user.is_organizer
+    })
