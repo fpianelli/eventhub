@@ -27,11 +27,14 @@ class User(AbstractUser):
         return errors
 
 
+
+
 class Event(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
-    organizer = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organized_events")
+    organizer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="organized_events")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -47,7 +50,6 @@ class Event(models.Model):
 
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
-
         return errors
 
     @classmethod
@@ -73,3 +75,48 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+class Category(models.Model):
+    name = models.CharField(max_length=20)
+    description = models.CharField(max_length=300)
+    is_active = models.BooleanField()
+
+    events = models.ManyToManyField('Event', related_name="categories")  # ← corregido
+
+    def __str__(self):
+        return self.name
+
+    @classmethod
+    def validate(cls, name, description):
+        errors = {}
+
+        if name == "":
+            errors["name"] = "Por favor ingrese un nombre"
+
+        if description == "":
+            errors["description"] = "Por favor ingrese una descripcion"
+
+        return errors
+
+    @classmethod
+    def new(cls, name, description, is_active):
+        errors = Category.validate(name, description)
+
+        if len(errors.keys()) > 0:
+            return False, errors
+
+        Category.objects.create(
+            name=name,
+            description=description,
+            is_active=is_active,
+        )
+
+        return True, None
+
+    def update(self, name, description, is_active):
+        self.name = name or self.name
+        self.description = description or self.description
+        self.is_active = is_active or self.is_active
+
+        self.save()
+

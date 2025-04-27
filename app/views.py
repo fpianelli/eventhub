@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Event, User
+from .models import Event, User, Category
 
 
 def register(request):
@@ -87,7 +87,6 @@ def event_delete(request, id):
 
     return redirect("events")
 
-
 @login_required
 def event_form(request, id=None):
     user = request.user
@@ -95,11 +94,14 @@ def event_form(request, id=None):
     if not user.is_organizer:
         return redirect("events")
 
+    categories = Category.objects.filter(is_active=True).order_by("id")
+
     if request.method == "POST":
         title = request.POST.get("title")
         description = request.POST.get("description")
         date = request.POST.get("date")
         time = request.POST.get("time")
+        selected_categories = request.POST.getlist("categories")  # ← captura los checkboxes
 
         [year, month, day] = date.split("-")
         [hour, minutes] = time.split(":")
@@ -109,19 +111,104 @@ def event_form(request, id=None):
         )
 
         if id is None:
-            Event.new(title, description, scheduled_at, request.user)
+            event = Event.objects.create(
+                title=title,
+                description=description,
+                scheduled_at=scheduled_at,
+                organizer=request.user,
+            )
         else:
             event = get_object_or_404(Event, pk=id)
-            event.update(title, description, scheduled_at, request.user)
+            event.title = title
+            event.description = description
+            event.scheduled_at = scheduled_at
+            event.organizer = request.user
+            event.save()
+
+            # Si es edición, limpiamos categorías anteriores
+            event.categories.clear()
+
+        # Ahora asociamos las categorías seleccionadas
+        for category_id in selected_categories:
+            category = Category.objects.get(id=category_id)
+            category.events.add(event)
 
         return redirect("events")
 
     event = {}
+    selected_category_ids = []
     if id is not None:
         event = get_object_or_404(Event, pk=id)
+        selected_category_ids = event.categories.values_list('id', flat=True)
 
     return render(
         request,
         "app/event_form.html",
-        {"event": event, "user_is_organizer": request.user.is_organizer},
+        {
+            "event": event,
+            "categories": categories,
+            "selected_category_ids": selected_category_ids,
+            "user_is_organizer": request.user.is_organizer,
+        },
     )
+
+@login_required
+def categories(request):
+
+    categories = Category.objects.order_by("id")
+
+    return render(
+        request,
+        "app/categories.html",
+        {"categories": categories, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def category_form(request, id=None):
+    user = request.user
+
+    if not user.is_organizer:
+        return redirect("categories")
+
+    if request.method == "POST":
+        name = request.POST.get("name")
+        description = request.POST.get("description")
+        is_active = request.POST.get("is_active") == "on"
+
+
+        if id is None:
+            Category.new(name, description, is_active)
+        else:
+            category = get_object_or_404(Category, pk=id)
+            category.update(name, description, is_active)
+
+        return redirect("categories")
+
+    category = {}
+    if id is not None:
+        category = get_object_or_404(Category , pk=id)
+
+    return render(
+        request,
+        "app/category_form.html",
+        {"category": category, "user_is_organizer": request.user.is_organizer},
+    )
+
+@login_required
+def category_detail(request, id):
+    category = get_object_or_404(Category, pk=id)
+    return render(request, "app/category_detail.html", {"category": category})
+
+@login_required
+def category_delete(request, id):
+    user = request.user
+    if not user.is_organizer:
+        return redirect("categories")
+
+    if request.method == "POST":
+        category = get_object_or_404(Category, pk=id)
+        category.delete()
+        return redirect("categories")
+
+    return redirect("categories")
+
