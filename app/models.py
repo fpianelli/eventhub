@@ -92,7 +92,8 @@ class Category(models.Model):
 
         if name == "":
             errors["name"] = "Por favor ingrese un nombre"
-
+        elif name.isnumeric():
+            errors["name"] = "El nombre no puede ser solo numeros"
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
 
@@ -114,9 +115,10 @@ class Category(models.Model):
         return True, None
 
     def update(self, name, description, is_active):
-        self.name = name or self.name
-        self.description = description or self.description
-        self.is_active = is_active or self.is_active
+        if name != "":
+            self.name = name
+        if description != "":
+            self.description = description
+        self.is_active = is_active  # <- Siempre asignar directamente
 
         self.save()
-

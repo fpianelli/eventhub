@@ -14,7 +14,10 @@
 
             <div class="card">
                 <div class="card-body">
-                    <form action="{% url 'event_form' %}" method="POST">
+
+<form method="POST" action="{% if event.id %}{% url 'event_edit' event.id %}{% else %}{% url 'event_form' %}{% endif %}">
+
+
                         {% csrf_token %}
                         <div class="vstack gap-3">
                             <div>
@@ -78,7 +81,12 @@
     {% endfor %}
 </div>
                             <div>
-                                <button type="submit" class="btn btn-primary">Crear Evento</button>
+
+<button type="submit" class="btn btn-primary">
+  {% if category.id %}Actualizar Evento{% else %}Crear Evento{% endif %}
+</button>
+
+
                             </div>
                         </div>
                     </form>
