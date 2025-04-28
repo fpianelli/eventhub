@@ -4,7 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
-from .models import Event, User
+#Autor: Buiatti Pedro Nazareno (agregar Notification y UserNotification)
+from .models import Event, User, Notification, UserNotification
+
+#Autor: Buiatti Pedro Nazareno 
+from .forms import NotificationForm
 
 
 def register(request):
@@ -125,3 +129,69 @@ def event_form(request, id=None):
         "app/event_form.html",
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
+
+
+
+
+
+#Autor: Buiatti Pedro Nazareno
+#Para listar notificaciones
+@login_required
+def listNotifications(request):
+    notifications = UserNotification.objects.filter(user=request.user).order_by('-notification__created_at')
+    numNotifications = notifications.filter(is_read=False).count()
+    return render(request, 'notification.html', {
+        'notificaciones': notifications,
+        'numNotifications': numNotifications
+    })
+
+#Autor: Buiatti Pedro Nazareno
+#Para crear una notificacion
+@login_required
+def createNotification(request):
+    if request.method=="POST":
+        form = NotificationForm(request.POST)
+        if form.is_valid():
+            notification = form.save()
+
+            #Crear relacion para el usaurio actual
+            UserNotification.objects.create(
+                user=request.user,
+                notification=notification,
+                is_read=False
+            )
+
+            return redirect('listNotifications')
+    else:
+        form = NotificationForm()
+    return render(request, 'notification.html', {'form': form})
+
+#Autor: Buiatti Pedro Nazareno
+@login_required
+def deleteNotification(request, pk):
+    userNotification = get_object_or_404(UserNotification, pk=pk, user=request.user)
+    if request.method == "POST":
+        userNotification.delete()
+        return redirect('listNotifications')
+    return render(request, 'notification.html', {
+        'notificacion': userNotification.notfication
+    })
+
+#Autor: Buiatti Pedro Nazareno
+@login_required
+def updateNotification(request, pk):
+    userNotification = get_object_or_404(UserNotification, pk=pk, user=request.user)
+    notification = userNotification.notfication
+    if request.method=="POST":
+        form = NotificationForm(request.POST, instance=notification)
+        if form.is_valid():
+            form.save()
+            return redirect('listNotifications')
+        else:
+            form = NotificationForm(instance=notification)
+        return render(request, 'notification.html', {'form': form})
+
+
+
+
+
