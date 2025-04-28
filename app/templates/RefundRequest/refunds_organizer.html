@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %} Reembolsos {% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Reembolsos</h1>
+            <a
+                href="{% url 'refund_form' %}"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                Solicitar reembolso
+            </a>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Cantidad</th>
+                <th>Razón</th>
+                <th>Fecha</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in refunds%}
+                <tr>
+                    <td>{{ r.client }}</td>
+                    <td>{{ r.amount }}</td>
+                    <td>{{ r.reason }}</td>
+                    <td>{{ r.created_at|date:"d b Y, H:i" }}</td>
+                    <td>
+                        {% if r.approved %}
+                            <span class="badge bg-success">Aprobado</span>
+                        {% else %}
+                            <span class="badge bg-danger">Rechazado</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="hstack gap-1">
+                            <a href="{% url 'refund_detail' r.id %}"
+                               class="btn btn-sm btn-outline-primary"
+                               aria-label="Ver detalle"
+                               title="Ver detalle">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </a>
+                            {% if user_is_organizer %}
+                                <a href="{% url 'refund_edit' r.id %}"
+                                    class="btn btn-sm btn-outline-secondary"
+                                    aria-label="Editar"
+                                    title="Editar">
+                                    <i class="bi bi-pencil" aria-hidden="true"></i>
+                                </a>
+                                <form action="{% url 'refund_delete' r.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-danger"
+                                        title="Eliminar"
+                                        type="submit"
+                                        aria-label="Eliminar"
+                                        titile="Eliminar">
+                                        <i class="bi bi-trash" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                                <form action="{% url 'refund_approve' r.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-info"
+                                        title="Aprobar"
+                                        type="submit"
+                                        aria-label="Aprobar"
+                                        titile="Aprobar">
+                                        <i class="bi bi-arrow-up-square" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                                <form action="{% url 'refund_reject' r.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <button class="btn btn-sm btn-outline-warning"
+                                        title="Rechazar"
+                                        type="submit"
+                                        aria-label="Rechazar"
+                                        titile="Rechazar">
+                                        <i class="bi bi-arrow-down-square" aria-hidden="true"></i>
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="4" class="text-center">No hay solicitudes disponibles</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -126,17 +126,25 @@ def event_form(request, id=None):
         {"event": event, "user_is_organizer": request.user.is_organizer},
     )
 #AMB DE REFUND REQUESTS
+@login_required
 def refund_requests(request):
     rr = RefundRequest.objects.all().order_by("created_at")
-    return render(
+    if request.user.is_organizer:
+        return render(
+        request,
+        "refundRequest/refunds_organizer.html",
+        {"refunds": rr, "user_is_organizer": request.user.is_organizer},
+        )
+    else:
+        return render(
         request,
         "refundRequest/refunds.html",
-        {"refunds": rr, "user_is_organizer": request.user.is_organizer},
-    )
-
+        {"refunds": rr, "user_is_organizer": request.user.is_organizer, "user": request.user},
+        )
+@login_required
 def refund_detail(request, id):
     rr = get_object_or_404(RefundRequest, pk=id)
-    return render(request, "refundRequest/refund_detail.html", {"refund": rr})
+    return render(request, "refundRequest/refund_detail.html", {"refund": rr, "user_is_organizer": request.user.is_organizer})
 
 @login_required
 def refund_delete(request, id=None):
@@ -148,15 +156,23 @@ def refund_delete(request, id=None):
 
 @login_required
 def refund_approve(request, id):
-    rr = get_object_or_404(RefundRequest, pk=id)
-    rr.approve_refund()
-    return redirect("refund_requests")
+    if request.user.is_organizer:
+        if request.method == "POST":
+            rr = get_object_or_404(RefundRequest, pk=id)
+            rr.approve_refund()
+        return redirect("refund_requests")
+    else:
+        return redirect("refund_requests")
 
 @login_required
 def refund_reject(request, id):
-    rr = get_object_or_404(RefundRequest, pk=id)
-    rr.reject_refund()
-    return redirect("refund_requests")
+    if request.user.is_organizer:
+        if request.method == "POST":
+            rr = get_object_or_404(RefundRequest, pk=id)
+            rr.reject_refund()
+        return redirect("refund_requests")
+    else:
+        return redirect("refund_requests")
 
 @login_required
 def refund_form(request, id=None, approval=False):
