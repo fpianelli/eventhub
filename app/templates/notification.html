@@ -1,0 +1,63 @@
+<!--Autor: Buiatti Pedro Nazareno-->
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Notificaciones</title>
+    </head>
+
+    <body>
+        <h1>Notificaciones<h1>
+            {% if form %}
+                {% include "notificationForm.html" %}    
+            {% endif %}
+
+        <table border="1">
+
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Evento</th>
+                    <th>Destinatarios</th>
+                    <th>Prioridad</th>
+                    <th>Fecha de envío</th>
+                    <th>Acciones</th>                    
+                </tr>
+            </thead>
+
+            <tbody>
+                <!--Para que muestre las notificaciones del usuario-->
+                {% for user_notificacion in notificaciones %}
+
+                    <tr>
+                        
+                        <td>{{user_notificacion.notification.title}}</td> 
+                        <td></td>
+                        <td></td>
+                        <td>{{user_notificacion.notification.get_priority_display}}</td>
+                        <td>{{notificacion.fecha | date:"d/m/Y H:i"}} <!--date para cambiar el formato de visualización de la fecha--></td> 
+                        <td>
+                            <a href="{% url 'updateNotification' user_notificacion.pk %}">Editar</a>
+                            
+                            <form method="post" action="{% url 'deleteNotification' user_notificacion.pk %}"
+                            onsubmit="return confirm(
+                                '¿Estás seguro de eliminar esta notificación?'
+                            );">
+                                {% csrf_token %}
+                                <button type="submit">Eliminar</button>
+                            </form>
+                        </td>
+                    
+                    </tr>
+                    
+                {% empty %}
+                    <tr>
+                        <td style="text-align: center;">No hay notificaciones disponibles.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        
+        </table>
+
+        <a href="{% url 'createNotification' %}">Crear una nueva Notificación</a>
+    </body>
+</html>

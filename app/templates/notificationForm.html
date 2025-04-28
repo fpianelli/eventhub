@@ -1,0 +1,12 @@
+<!--Autor: Buiatti Pedro Nazareno-->
+<h2>
+    {% if form.instance.pk %}Editar{% else %}Crear {% endif %}
+    Notificación 
+</h2>
+
+<form method="post">
+    {% csrf_token %} <!--genera un token almacenado en la sesion del usuario, para verificar que la solicitud proviene de una fuente confiable -->
+    {{ form.as_p }} <!--convierte un formulario en un parrafo-->
+    <button type="sumbit">Guardar</button>
+    <a href="{% url 'listNotifications' %}">Cancelar</a> <!--para definir la URL a la vista de forma dinamica-->
+</form>
