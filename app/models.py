@@ -73,3 +73,41 @@ class Event(models.Model):
         self.organizer = organizer or self.organizer
 
         self.save()
+
+
+
+#Autor: Buiatti Pedro Nazareno
+#Modelo de notificacion
+class Notification(models.Model):
+    #Modelo de prioridad de la notificacion
+    #Clase interna de conocimiento para Notificacion
+    class NotificationPriority(models.TextChoices):
+        HIGH = "HIGH", "Alta"
+        MEDIUM = "MEDIUM", "Media"
+        LOW = "LOW", "Baja"
+
+    title = models.CharField(max_length=250)
+    message = models.TextField()
+    created_at = models.DateField(auto_now_add=True)
+    is_read = models.BooleanField(default=False)
+
+    priority = models.CharField(
+        max_length=10,
+        choices=NotificationPriority.choices,
+        default=NotificationPriority.LOW
+    )
+
+    def __str__(self):
+        return f"{self.title} - Creada el {self.created_at}"
+    
+
+#Autor: Buiatti Pedro Nazareno
+#Modelo para intermedia entre Notificacion y Usuario
+class UserNotification(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_notifications")
+    notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name="user_notifications")
+    is_read = models.BooleanField(default=False) 
+
+    def __str__(self):
+        return f"Notificación: {self.notification.title} - Usuario_ {self.user.username}"
+
