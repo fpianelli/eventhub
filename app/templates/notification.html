@@ -1,4 +1,6 @@
 <!--Autor: Buiatti Pedro Nazareno-->
+
+{% load static %}
 <!DOCTYPE html>
 <html>
     <head>
@@ -7,10 +9,7 @@
 
     <body>
         <h1>Notificaciones<h1>
-            {% if form %}
-                {% include "notificationForm.html" %}    
-            {% endif %}
-
+            
         <table border="1">
 
             <thead>
@@ -58,6 +57,8 @@
         
         </table>
 
-        <a href="{% url 'createNotification' %}">Crear una nueva Notificación</a>
+        {% if request.user.is_organizer %}
+            <a href="{% url 'createNotification' %}">Crear una nueva Notificación</a>
+        {% endif %}
     </body>
 </html>

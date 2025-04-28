@@ -132,31 +132,50 @@ def event_form(request, id=None):
 
 
 
-
+#Autor: Buiatti Pedro Nazareno
+#Para listar notificaciones
+from django.contrib import messages
 
 #Autor: Buiatti Pedro Nazareno
 #Para listar notificaciones
 @login_required
 def listNotifications(request):
-    notifications = UserNotification.objects.filter(user=request.user).order_by('-notification__created_at')
-    numNotifications = notifications.filter(is_read=False).count()
+    user = request.user
+    if user.is_organizer:
+        notifications = UserNotification.objects.filter(user=user).order_by('-notification__created_at')
+        numNotifications = notifications.filter(is_read=False).count()
+    else:
+        notifications = UserNotification.objects.filter(user=user).order_by('-notification__created_at')
+        numNotifications = notifications.filter(is_read=False).count()
+    form = None
+    if user.is_organizer:
+        form = NotificationForm()
+    
     return render(request, 'notification.html', {
         'notificaciones': notifications,
-        'numNotifications': numNotifications
+        'numNotifications': numNotifications,
+        'is_organizer': user.is_organizer,
+        'form': form
     })
 
 #Autor: Buiatti Pedro Nazareno
 #Para crear una notificacion
 @login_required
 def createNotification(request):
+    user = request.user
+    if not user.is_organizer:
+        return redirect('listNotifications')
+
     if request.method=="POST":
         form = NotificationForm(request.POST)
         if form.is_valid():
-            notification = form.save()
+            notification = form.save(commit=False) #Guarda la instancia sin guardarla en la base aún
+            notification.user = user
+            notification.save() # Se guarda en la base con el usuario creador 
 
             #Crear relacion para el usaurio actual
             UserNotification.objects.create(
-                user=request.user,
+                user=user,
                 notification=notification,
                 is_read=False
             )
@@ -164,32 +183,41 @@ def createNotification(request):
             return redirect('listNotifications')
     else:
         form = NotificationForm()
-    return render(request, 'notification.html', {'form': form})
+    return render(request, 'notificationForm.html', {'form': form})
 
 #Autor: Buiatti Pedro Nazareno
 @login_required
 def deleteNotification(request, pk):
+    user = request.user
     userNotification = get_object_or_404(UserNotification, pk=pk, user=request.user)
     if request.method == "POST":
-        userNotification.delete()
-        return redirect('listNotifications')
-    return render(request, 'notification.html', {
-        'notificacion': userNotification.notfication
-    })
+        if user.is_organizer:
+            userNotification.delete()
+            messages.success(request, "La notificación ha sido eliminada.")
+        else: 
+            userNotification.is_read = True
+            userNotification.save()
+            messages.success(request, "La notificación ha sido marcada ccomo leída.")
+    return redirect('listNotifications')
 
 #Autor: Buiatti Pedro Nazareno
 @login_required
 def updateNotification(request, pk):
+    user = request.user
     userNotification = get_object_or_404(UserNotification, pk=pk, user=request.user)
-    notification = userNotification.notfication
+    if not user.is_organizer or userNotification.user != user:
+        return redirect('listNotifications')
+    
+    notification = userNotification.notification
     if request.method=="POST":
         form = NotificationForm(request.POST, instance=notification)
         if form.is_valid():
             form.save()
+            messages.success(request, "La notificación ha sido actualizada.")
             return redirect('listNotifications')
-        else:
-            form = NotificationForm(instance=notification)
-        return render(request, 'notification.html', {'form': form})
+    else:
+        form = NotificationForm(instance=notification)
+    return render(request, 'notification.html', {'form': form})
 
 
 
