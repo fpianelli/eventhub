@@ -30,5 +30,9 @@ Aplicación web para venta de entradas utilizada en la cursada 2025 de Ingenier�
 
 `python manage.py runserver`
 
+## Valentino Laure
 ## Felipe Pianelli
 ## Joaquín Caputo
+## Lucas Cirille
+## Buiatti Pedro
+## Gomez Facundo
