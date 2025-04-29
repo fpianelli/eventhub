@@ -1,11 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-<<<<<<< HEAD
 from django.utils import timezone
-=======
 from django.conf import settings
 import uuid
->>>>>>> main
 
 
 class User(AbstractUser):
