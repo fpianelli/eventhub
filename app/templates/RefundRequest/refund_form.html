@@ -38,14 +38,21 @@
                                         name="reason" />
                                 </div>
                             </div>
-                            <div>
-                                <button type="submit" class="btn btn-primary">
-                                    {% if rr.id %}
-                                        Editar solicitud
-                                    {% else %}
-                                        Solicitar reembolso
-                                    {% endif %}
-                                </button>
+                            {% if rr.id %}
+                                <div>
+                                    <button type="submit" class="btn btn-primary mt-3">Editar solicitud</button>
+                                </div>
+                            {% else %}
+                                        <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" value="" id="termsCheck" required>
+                                    <label class="form-check-label" for="termsCheck">
+                                        Entiendo y acepto la <a href="#">política de reembolsos</a>.
+                                    </label>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">Solicitar reembolso</button>
+                                </div>
+                            {% endif %}
                             </div>
                         </div>
                     </form>

@@ -185,7 +185,7 @@ def refund_form(request, id=None, approval=False):
         ticket_code = request.POST.get("ticket_code")
         reason = request.POST.get("reason")
         
-        if id is None:
+        if not id:
             rr = RefundRequest.create_refund(client, ticket_code, reason)
             if approval:
                 rr.approve_refund()
@@ -193,8 +193,7 @@ def refund_form(request, id=None, approval=False):
         else:
             rr = get_object_or_404(RefundRequest, pk=id)
             rr.edit_refund(ticket_code, reason, client)
-            return redirect('refund_detail', id=rr.pk)
-    
+            return redirect('refund_detail', id=rr.pk)   
     return render(
         request,
         "refundRequest/refund_form.html",

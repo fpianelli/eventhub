@@ -26,8 +26,8 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Detalles de la solicitud</h5>
-                <p class="card-text">Razón: {{ refund.reason }}</p>
                 <p class="card-text">Codigo de ticket: {{ refund.ticket_code }}</p>
+                <p class="card-text">Razón: {{ refund.reason }}</p>
                 <div class="mt-4">
                     <div class="d-flex align-items-center mb-3">
                         <div class="bg-light rounded-circle p-2 me-3">
@@ -45,10 +45,12 @@
                         <div>
                             <h6 class="mb-0">Estado de aprobación</h6>
                             <p class="mb-0">
-                                {% if refund.approved %}
-                                ✅ Aprobado
-                                {% else %}
+                                {% if refund.approved == True %}
+                                    ✅ Aprobado
+                                {% elif refund.approved == False %}
                                     ❌ No aprobado
+                                {% else %}
+                                    Pendiente
                                 {% endif %}
                             </p>
                             {% if refund.approved and refund.approval_date %}

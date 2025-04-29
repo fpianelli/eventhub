@@ -76,7 +76,7 @@ class Event(models.Model):
         self.save()
 
 class RefundRequest(models.Model):
-    approved = models.BooleanField(default=False)
+    approved = models.BooleanField(null=True, default=None)
     approval_date = models.DateTimeField(null=True, blank=True)
     ticket_code = models.CharField(max_length=100, default="")
     reason = models.TextField()
@@ -86,12 +86,12 @@ class RefundRequest(models.Model):
         return f"RefundRequest {self.pk} - User: {self.client.username} - Ticket: {self.ticket_code} - Approved: {self.approved}"
     
     @classmethod
-    def create_refund(cls, client, tC, reason, approval=False):
+    def create_refund(cls, client, tC, reason):
         return cls.objects.create(
             client=client,
             ticket_code=tC,
             reason=reason,
-            approved=approval,
+            approved=None,
         )
 
     def cancel_refund(self):

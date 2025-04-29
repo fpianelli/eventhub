@@ -10,7 +10,7 @@
                 href="{% url 'refund_form' %}"
                 class="btn btn-primary"
             >
-                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                <i class="bi bi-calendar-x me-2" aria-hidden="true"></i>
                 Solicitar reembolso
             </a>
     </div>
@@ -18,26 +18,29 @@
         <thead>
             <tr>
                 <th>Cliente</th>
-                <th>Cantidad</th>
+                <th>Ticket</th>
+                <th>Estado</th>
                 <th>Razón</th>
                 <th>Fecha</th>
-                <th>Estado</th>
+                <th>Opciones</th>
             </tr>
         </thead>
         <tbody>
             {% for r in refunds%}
                 <tr>
                     <td>{{ r.client }}</td>
-                    <td>{{ r.amount }}</td>
-                    <td>{{ r.reason }}</td>
-                    <td>{{ r.created_at|date:"d b Y, H:i" }}</td>
+                    <td>{{ r.ticket_code }}</td>
                     <td>
-                        {% if r.approved %}
+                        {% if r.approved == True %}
                             <span class="badge bg-success">Aprobado</span>
-                        {% else %}
+                        {% elif r.approved == False  %}
                             <span class="badge bg-danger">Rechazado</span>
+                        {% else %}
+                            <span class="badge bg-warning">Pendiente</span>
                         {% endif %}
                     </td>
+                    <td>{{ r.reason }}</td>
+                    <td>{{ r.created_at|date:"d b Y, H:i" }}</td>
                     <td>
                         <div class="hstack gap-1">
                             <a href="{% url 'refund_detail' r.id %}"
@@ -63,26 +66,28 @@
                                         <i class="bi bi-trash" aria-hidden="true"></i>
                                     </button>
                                 </form>
-                                <form action="{% url 'refund_approve' r.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button class="btn btn-sm btn-outline-info"
-                                        title="Aprobar"
-                                        type="submit"
-                                        aria-label="Aprobar"
-                                        titile="Aprobar">
-                                        <i class="bi bi-arrow-up-square" aria-hidden="true"></i>
-                                    </button>
-                                </form>
-                                <form action="{% url 'refund_reject' r.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button class="btn btn-sm btn-outline-warning"
-                                        title="Rechazar"
-                                        type="submit"
-                                        aria-label="Rechazar"
-                                        titile="Rechazar">
-                                        <i class="bi bi-arrow-down-square" aria-hidden="true"></i>
-                                    </button>
-                                </form>
+                                {% if r.approved == None  %}
+                                    <form action="{% url 'refund_approve' r.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-outline-info"
+                                            title="Aprobar"
+                                            type="submit"
+                                            aria-label="Aprobar"
+                                            titile="Aprobar">
+                                            <i class="bi bi-arrow-up-square" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                    <form action="{% url 'refund_reject' r.id %}" method="POST">
+                                        {% csrf_token %}
+                                        <button class="btn btn-sm btn-outline-warning"
+                                            title="Rechazar"
+                                            type="submit"
+                                            aria-label="Rechazar"
+                                            titile="Rechazar">
+                                            <i class="bi bi-arrow-down-square" aria-hidden="true"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </td>

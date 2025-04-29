@@ -10,7 +10,7 @@
                 href="{% url 'refund_form' %}"
                 class="btn btn-primary"
             >
-                <i class="bi bi-plus-circle me-2" aria-hidden="true"></i>
+                <i class="bi bi-calendar-x me-2" aria-hidden="true"></i>
                 Solicitar reembolso
             </a>
     </div>
@@ -18,10 +18,10 @@
         <thead>
             <tr>
                 <th>Cliente</th>
-                <th>Cantidad</th>
+                <th>Ticket</th>
+                <th>Estado</th>
                 <th>Razón</th>
                 <th>Fecha</th>
-                <th>Estado</th>
                 <th>Opciones</th>
             </tr>
         </thead>
@@ -30,16 +30,18 @@
                 {% if r.client.id == user.id %}
                     <tr>
                         <td>{{ r.client }}</td>
-                        <td>{{ r.amount }}</td>
-                        <td>{{ r.reason }}</td>
-                        <td>{{ r.created_at|date:"d b Y, H:i" }}</td>
+                        <td>{{ r.ticket_code }}</td>
                         <td>
-                            {% if r.approved %}
+                            {% if r.approved == True %}
                                 <span class="badge bg-success">Aprobado</span>
-                            {% else %}
+                            {% elif r.approved == False%}
                                 <span class="badge bg-danger">Rechazado</span>
+                            {% else %}
+                                <span class="badge bg-warning">Pendiente</span>
                             {% endif %}
                         </td>
+                        <td>{{ r.reason }}</td>
+                        <td>{{ r.created_at|date:"d b Y, H:i" }}</td>
                         <td>
                             <div class="hstack gap-1">
                                 <a href="{% url 'refund_detail' r.id %}"
