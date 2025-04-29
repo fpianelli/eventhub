@@ -5,7 +5,14 @@
     <div class="row">
         <div class="d-flex justify-content-between align-items-center">
             <h1>{{ event.title }}</h1>
-            <div>
+            {% if not user_is_organizer %}
+                <a
+                href="{% url 'ticket_form' event.id %}"
+                class="btn btn-primary"
+            >
+                <i class="bi bi-ticket-perforated me-2" aria-hidden="true"></i> Comprar Entradas
+            </a>
+            {% endif %}
             {% if user_is_organizer %}
                 <a
                     href="{% url 'event_edit' event.id %}"
@@ -13,10 +20,12 @@
                 >
                     <i class="bi bi-pencil me-1"></i>Editar
                 </a>
-            {% endif %}
+                {% endif %}
+            </div>
         </div>
     </div>
-    <div class="row">
+    
+    <div class="row mt-3">
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Detalles del Evento</h5>
@@ -59,5 +68,102 @@
             </div>
         </div>
     </div>
+
+    {# Comentarios #}
+    <div class="row mt-4">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Comentarios ({{ comments.count }})</h2>
+
+                {# Nuevo comentario #}
+                <div class="mb-4">
+                    <form method="POST" action="{% url 'event_detail' event.id %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="new_comment">
+                        <div class="mb-3">
+                            <input type="text" class="form-control" id="title" name="title" maxlength="100" placeholder="Título" required>
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" id="text" name="text" rows="3" placeholder="Escribe tu comentario..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send me-1"></i>Enviar comentario
+                        </button>
+                    </form>
+                </div>
+
+                {# Lista de comentarios #}
+                {% for comment in comments %}
+                <div class="mb-4 p-3 border-bottom comment-container" id="comment-{{ comment.id }}" data-comment-id="{{ comment.id }}">
+                    {% if edit_comment and edit_comment.id == comment.id %}
+                    {# Editar comentario #}
+                    <form method="POST" class="edit-comment-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="form_type" value="edit_comment">
+                        <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                        
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-person text-primary me-2"></i>
+                                <h4 class="mb-0 fw-bold">{{ comment.user.username }}</h4>
+                            </div>
+                            <small class="text-muted">{{ comment.created_at|date:"j M Y, H:i" }}</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="text" class="form-control" name="title" value="{{ comment.title }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <textarea class="form-control" name="text" rows="3" required>{{ comment.text }}</textarea>
+                        </div>
+                        
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-circle me-1"></i>Guardar
+                            </button>
+                            <a href="{% url 'event_detail' event.id %}" class="btn btn-sm btn-outline-secondary">
+                                Cancelar
+                            </a>
+                        </div>
+                    </form>
+                    {% else %}
+                    {# Visualización de los comentarios #}
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person text-primary me-2"></i>
+                            <h4 class="mb-0 fw-bold">{{ comment.user.username }}</h4>
+                        </div>
+                        <small class="text-muted">{{ comment.created_at|date:"j M Y, H:i" }}</small>
+                    </div>
+                    
+                    <h5 class="mb-2 text-primary fw-bold">{{ comment.title }}</h5>
+                    <p class="mb-3">{{ comment.text }}</p>
+                    
+                    {% if comment.user == request.user %}
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'event_detail' event.id %}?edit_comment={{ comment.id }}#comment-{{ comment.id }}" 
+                           class="btn btn-sm btn-outline-secondary">
+                            <i class="bi bi-pencil me-1"></i>Editar
+                        </a>
+                        <form method="POST" class="delete-comment-form" data-comment-id="{{ comment.id }}">
+                            {% csrf_token %}
+                            <input type="hidden" name="delete_comment" value="1">
+                            <input type="hidden" name="comment_id" value="{{ comment.id }}">
+                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                <i class="bi bi-trash me-1"></i>Eliminar
+                            </button>
+                        </form>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                {% empty %}
+                <p class="text-muted">No hay comentarios aún.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 </div>
+
+
 {% endblock %}
