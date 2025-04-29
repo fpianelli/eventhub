@@ -4,7 +4,12 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 
+<<<<<<< HEAD
 from .models import Event, User, RefundRequest
+=======
+from .models import Event, User, Ticket
+from django.views.decorators.http import require_POST
+>>>>>>> main
 
 
 def register(request):
@@ -71,7 +76,7 @@ def events(request):
 @login_required
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
-    return render(request, "app/event_detail.html", {"event": event})
+    return render(request, "app/event_detail.html", {"event": event, "user_is_organizer": request.user.is_organizer})
 
 
 @login_required
@@ -201,3 +206,83 @@ def refund_form(request, id=None, approval=False):
     )
 
 
+
+@login_required
+def ticket_detail(request):
+    if request.user.is_organizer:
+        tickets = Ticket.objects.filter(event__organizer=request.user).order_by("buy_date")
+    else:
+        tickets = Ticket.objects.filter(user=request.user).order_by("buy_date")
+    return render(request, "app/ticket_detail.html", {"tickets": tickets, "is_organizer": request.user.is_organizer,})
+
+@login_required
+def ticket_form(request, event_id):
+
+    event = get_object_or_404(Event, id=event_id)
+    
+    if request.method == 'POST':
+
+        type_ticket = request.POST.get('type_ticket')
+        quantity = request.POST.get('quantity')
+
+        errors = Ticket.validate_ticket(type_ticket, quantity)
+
+        if len(errors) > 0:
+            return render(request, "app/ticket_form.html", {
+                'event': event,
+                'errors': errors,
+                'data': request.POST,
+                'is_edit': False,
+            })
+
+        ticket = Ticket(
+            user=request.user,
+            type_ticket=type_ticket,
+            quantity=int(quantity),
+            event=event
+        )
+        ticket.save()
+        return redirect('ticket_detail')
+    return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False, 'data': {}, 'errors': {},})
+
+@login_required
+def ticket_edit(request, ticket_id):
+
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+
+    if request.method == 'POST':
+
+        type_ticket = request.POST.get('type_ticket')
+        quantity = request.POST.get('quantity')
+
+        errors = Ticket.validate_ticket(type_ticket, quantity)
+
+        if len(errors) > 0:
+            return render(request, "app/ticket_form.html", {
+                'ticket': ticket,
+                'event': ticket.event,
+                'errors': errors,
+                'data': request.POST,
+                'is_edit': True,
+            })
+
+        ticket.type_ticket = type_ticket
+        ticket.quantity = int(quantity)
+        ticket.save()
+        return redirect('ticket_detail')
+    else:
+        return render(request, 'app/ticket_form.html', {
+            'ticket': ticket,
+            'event': ticket.event,
+            'is_edit': True,
+            'data': {},
+            'errors': {},
+        })
+    
+
+@require_POST
+@login_required
+def ticket_delete(request, ticket_id):
+    ticket = get_object_or_404(Ticket, id=ticket_id)
+    ticket.delete()
+    return redirect('ticket_detail')

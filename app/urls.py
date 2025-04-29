@@ -20,4 +20,8 @@ urlpatterns = [
     path("refunds/<int:id>/reject/", views.refund_reject, name="refund_reject"),
     path("refunds/<int:id>/", views.refund_detail, name="refund_detail"),
     path("refunds/<int:id>/delete/", views.refund_delete, name="refund_delete"),
+    path("tickets/", views.ticket_detail, name="ticket_detail"),
+    path('tickets/<int:ticket_id>/edit/', views.ticket_edit, name='ticket_edit'),
+    path('tickets/<int:ticket_id>/delete/', views.ticket_delete, name='ticket_delete'),
+    path('events/<int:event_id>/buy_tickets/', views.ticket_form, name='ticket_form'),
 ]
