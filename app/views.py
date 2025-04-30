@@ -217,7 +217,7 @@ def updateNotification(request, pk):
             return redirect('listNotifications')
     else:
         form = NotificationForm(instance=notification)
-    return render(request, 'notification.html', {'form': form})
+    return render(request, 'notificationForm.html', {'form': form})
 
 
 

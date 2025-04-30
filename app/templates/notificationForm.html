@@ -1,31 +1,94 @@
 <!--Autor: Buiatti Pedro Nazareno-->
 
-{% block content %}
-    <div>
-        <h2>
-            {% if form.instance.pk %}Editar{% else %}Crear {% endif %}
-            Notificación 
-        </h2>
+{% load static %}
+<!DOCTYPE html>
+<html>
 
-        <form method="post">
-            {% csrf_token %} <!--genera un token almacenado en la sesion del usuario, para verificar que la solicitud proviene de una fuente confiable-->
-            <div>
-                {{ form.title.label_tag }} 
-                {{ form.title }}
-            </div>
-            <div>
-                {{ form.message.label_tag }} 
-                {{ form.message }}
-            </div>
-            <div>
-                {{ form.priority.label_tag }} 
-                {{ form.priority }}
-            </div>
+    <head>
+        <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+        >
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        >
+    </head>
 
-            <div>
-                <button type="sumbit">Guardar</button>
-                <a href="{% url 'listNotifications' %}">Cancelar</a>
+    <body>
+        {% block content %}
+            <div class="container mt-5">
+                <h2 class="mb-4">
+                    {% if form.instance.pk %}Editar{% else %}Crear {% endif %}
+                    Notificación 
+                </h2>
+
+                <div class="row">
+                    <div class="col-md-8 bg-light p-3 rounded shadow-sm">
+                        <form method="POST" action="{% url 'createNotification' %}">
+                            {% csrf_token %} <!--genera un token almacenado en la sesion del usuario, para verificar que la solicitud proviene de una fuente confiable-->
+                            
+                            <div class="col-md-9 mb-3">
+                                <label for="id_title" class="form-label">Título de la notificación <span style="color: red;">*</span> </label>
+                                {{ form.title }}
+                            </div>
+                            
+                            <div class="col-md-9 mb-3">
+                                <label for="id_message" class="form-label"> Mensaje <span style="color: red;">*</span> </label>
+                                {{ form.message }}
+                            </div>
+                            
+                            <div class="col-md-9 mb-3">
+                                    
+                            </div> 
+
+                            <div class="col-md-9 mb-4">
+                                <label for="id_priority" class="form-label">Prioridad<span style="color: red;">*</span> </label><br>
+                                {{ form.priority }}
+                            </div> 
+
+                            
+                            <a href="{% url 'listNotifications' %}" class="btn btn-secondary">Cancelar</a>
+                            <button type="sumbit" class="btn btn-primary">Enviar notificación</button>                            
+                        </form>
+                    </div>
+
+                    <div class="col-md-4 bg-light p-3 rounded shadow-sm">
+                        <div class="card">
+                            <div class="card-header bg-light"> 
+                                Consejos
+                            </div>
+
+                            <ul class="list-group list-group-flush">
+
+                                <li class="list-group-item d-flex align-items-start">
+                                    <i class="bi bi-lightbulb text-warning me-2"></i>       
+                                    Usa títulos claros y concisos para captar la atención.
+                                </li>
+
+                                <li class="list-group-item d-flex align-items-start">
+                                    <i class="bi bi-lightbulb text-warning me-2"></i>       
+                                    Incluye toda la información relevante en el mensaje.
+                                </li>
+
+                                <li class="list-group-item d-flex align-items-start">
+                                    <i class="bi bi-lightbulb text-warning me-2"></i>       
+                                    Usa la prioridad alta solo para notificaciones urgentes.
+                                </li>
+
+                                <li class="list-group-item d-flex align-items-start">
+                                    <i class="bi bi-lightbulb text-warning me-2"></i>       
+                                    Considera enviar por correo electrónico las notificaciones importantes.
+                                </li>
+
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-        </form>
-    </div>
-{% endblock content %}
+        {% endblock content %}
+    </body>
+
+</html>
+
