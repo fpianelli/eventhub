@@ -205,7 +205,11 @@ def deleteNotification(request, pk):
 def updateNotification(request, pk):
     user = request.user
     userNotification = get_object_or_404(UserNotification, pk=pk, user=request.user)
-    if not user.is_organizer or userNotification.user != user:
+    if not user.is_organizer:
+        if request.method == "POST":
+            userNotification.is_read = True
+            userNotification.save()
+            messages.success(request, "Notificación marcada como leída.")
         return redirect('listNotifications')
     
     notification = userNotification.notification
