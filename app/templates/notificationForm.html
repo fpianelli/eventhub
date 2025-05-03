@@ -24,37 +24,117 @@
                 </h2>
 
                 <div class="row">
-                    <div class="col-md-8 bg-light p-3 rounded shadow-sm">
-                        <form method="POST" action="{% url 'createNotification' %}">
+                    <div class="col-lg-8 bg-light p-3 rounded-3 shadow-sm">
+                        <form method="POST" 
+                            action="
+                                {% if form.instance.pk %}
+                                    {% url 'updateNotification' form.instance.pk %}
+                                {% else %}
+                                    {% url 'createNotification' %}
+                                {% endif %}
+                            "
+                        >
                             {% csrf_token %} <!--genera un token almacenado en la sesion del usuario, para verificar que la solicitud proviene de una fuente confiable-->
-                            
-                            <div class="col-md-9 mb-3">
-                                <label for="id_title" class="form-label">Título de la notificación <span style="color: red;">*</span> </label>
+
+                            <div class="mb-3">
+                                <label for="id_title" class="form-label">
+                                    <span class="fw-semibold">Título de la notificación</span>
+                                    <span style="color: red;">*</span> 
+                                </label>
                                 {{ form.title }}
+                                
+                                {% if form.title.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.title.errors }}
+                                    </div>
+                                {% endif %}
                             </div>
                             
-                            <div class="col-md-9 mb-3">
-                                <label for="id_message" class="form-label"> Mensaje <span style="color: red;">*</span> </label>
+                            <div class="mb-3">
+                                <label for="id_message" class="form-label"> 
+                                    <span class="fw-semibold">Mensaje</span>
+                                    <span style="color: red;">*</span> 
+                                </label>
                                 {{ form.message }}
+
+                                {% if form.message.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.message.errors }}
+                                    </div>
+                                {% endif %}     
                             </div>
                             
-                            <div class="col-md-9 mb-3">
-                                    
+                            <div class="mb-3">
+
+                                <label for="id_event" class="form-label"> 
+                                    <span class="fw-semibold">Evento relacionado</span>
+                                    <span style="color: red;">*</span> 
+                                </label>
+                                {{ form.event }}
+
+                                {% if form.event.errors %}
+                                    <div class="invalid-feedback d-block">
+                                        {{ form.event.errors }}
+                                    </div>
+                                {% endif %}
+                    
                             </div> 
 
-                            <div class="col-md-9 mb-4">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <span class="fw-semibold">Destinatarios</span>
+                                    <span class="text-danger">*</span>
+                                </label>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="recipient_type"
+                                        id="all_users" value="all"
+                                        {% if form.initial.recipient_type == 'all' or not form.initial.recipient_type %}checked{% endif %}
+                                        onclick="document.getElementById('user_selection').classList.add('d-none')">
+                                    <label class="form-check-label" for="all_users">Todos los usuarios</label>
+                                </div>
+
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="recipient_type"
+                                        id="specific_user" value="specific"
+                                        {% if form.initial.recipient_type == 'specific' %}checked{% endif %}
+                                        onclick="document.getElementById('user_selection').classList.remove('d-none')">
+                                    <label class="form-check-label" for="specific_user">Usuario específico</label>
+                                </div>
+
+                                <div id="user_selection" class="mt-2 {% if form.initial.recipient_type != 'specific' %}d-none{% endif %}">
+                                    <select name="recipient" id="id_recipient" class="form-select">
+                                        <option value="">-----</option>
+                                        {% for user in users %}
+                                            <option value="{{ user.id }}"
+                                                {% if form.initial.recipient == user.id %}selected{% endif %}>
+                                                {{ user.username }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text text-muted">Selecciona un Usuario</div>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
                                 <label for="id_priority" class="form-label">Prioridad<span style="color: red;">*</span> </label><br>
                                 {{ form.priority }}
                             </div> 
 
+                            <div class="d-flex justify-content-end mt-4">
+                                <a href="{% url 'listNotifications' %}" class="btn btn-outline-secondary me-2">
+                                    Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    Enviar notificación
+                                </button>                            
+                            </div>
                             
-                            <a href="{% url 'listNotifications' %}" class="btn btn-secondary">Cancelar</a>
-                            <button type="sumbit" class="btn btn-primary">Enviar notificación</button>                            
                         </form>
                     </div>
 
-                    <div class="col-md-4 bg-light p-3 rounded shadow-sm">
-                        <div class="card">
+                    <div class="col-lg-4 bg-light p-3 rounded">
+                        <div class="card border-0 shadow-sm">
                             <div class="card-header bg-light"> 
                                 Consejos
                             </div>

@@ -17,6 +17,6 @@ urlpatterns = [
     #Autor: Buiatti Pedro Nazareno
     path('notification', views.listNotifications, name='listNotifications'),
     path('notification/create/', views.createNotification, name='createNotification'),
-    path('notification/update/<int:pk>/', views.updateNotification, name='updateNotification'),
+    path('notification/update/<pk>/', views.updateNotification, name='updateNotification'),
     path('notification/delete/<int:pk>/', views.deleteNotification, name='deleteNotification'),
 ]

@@ -97,6 +97,14 @@ class Notification(models.Model):
         default=NotificationPriority.LOW
     )
 
+    event = models.ForeignKey(
+        Event,
+        on_delete=models.SET_NULL, #si se borra el evento, la notificación no se borra
+        null=True, #permite que sea nulo
+        blank=True, #campo vacío permitido en formularios
+        related_name='notifications' #nombree para la relacion inversa
+    )
+
     def __str__(self):
         return f"{self.title} - Creada el {self.created_at}"
     
