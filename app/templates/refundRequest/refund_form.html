@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h1 class="mb-4">
+                {% if rr.id %}
+                    Editar solicitud
+                {% else %}
+                    Solicitar reembolso
+                {% endif %}
+            </h1>
+
+            <div class="card">
+                <div class="card-body">
+                    <form action="{% if rr.pk %}{% url 'refund_edit' id=rr.pk %}{% else %}{% url 'refund_form' %}{% endif %}" method="POST">
+                        {% csrf_token %}
+                        <div class="vstack gap-3">
+                            <div>
+                                <label for="description" class="form-label">Codigo de ticket</label>
+                                <textarea
+                                    class="form-control"
+                                    id="ticket_code"
+                                    name="ticket_code"
+                                    rows="4"
+                                    required="">{% if rr %}{{ rr.ticket_code }}{% endif %}</textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label for="date" class="form-label">Razón</label>
+                                    <input
+                                        class="form-control"
+                                        id="reason"
+                                        required=""
+                                        type="string"
+                                        value="{% if rr %}{{ rr.reason }}{% endif %}"
+                                        name="reason" />
+                                </div>
+                            </div>
+                            {% if rr.id %}
+                                <div>
+                                    <button type="submit" class="btn btn-primary mt-3">Editar solicitud</button>
+                                </div>
+                            {% else %}
+                                        <div class="form-check mt-3">
+                                    <input class="form-check-input" type="checkbox" value="" id="termsCheck" required>
+                                    <label class="form-check-label" for="termsCheck">
+                                        Entiendo y acepto la <a href="#">política de reembolsos</a>.
+                                    </label>
+                                </div>
+                                <div>
+                                    <button type="submit" class="btn btn-primary">Solicitar reembolso</button>
+                                </div>
+                            {% endif %}
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
