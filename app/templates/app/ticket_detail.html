@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Mis Entradas{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mt-4 mb-4">
+        <h1>Mis Entradas</h1>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Evento</th>
+                <th>Usuario</th>
+                <th>Codigo de Ticket</th>
+                <th>Tipo</th>
+                <th>Cantidad</th>
+                <th>Fecha de compra</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in tickets%}
+                <tr>
+                    <td>{{ t.event.title }}</td>
+                    <td>{{ t.user }}</td>
+                    <td>{{ t.ticket_code }}</td>
+                    <td>{{ t.type_ticket }}</td>
+                    <td>{{ t.quantity }}</td>
+                    <td>{{ t.buy_date|date:"d/m/Y" }}</td>
+                    <td>
+                        <div class="hstack gap-1">
+                            {% if not is_organizer %}
+                            <a href="{% url 'ticket_edit' t.id %}"
+                                class="btn btn-sm btn-outline-secondary"
+                                aria-label="Editar"
+                                title="Editar">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                            </a>
+                            {% endif %}
+                            <form action="{% url 'ticket_delete' t.id %}" method="POST">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger"
+                                    title="Eliminar"
+                                    type="submit"
+                                    aria-label="Eliminar"
+                                    titile="Eliminar"
+                                    onclick="return confirm('¿Estás seguro que querés eliminar este ticket?')"
+                                    >
+                                    <i class="bi bi-trash" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">No hay tickets disponibles</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
