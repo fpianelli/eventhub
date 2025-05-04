@@ -43,6 +43,20 @@
                         <span class="navbar-toggler-icon"></span>
                     </button>
 
+                    <!--Autor: Buiatti Pedro Nazareno-->
+                    <div style="position: relative; display: inline-block">
+                        <a href="{% url 'listNotifications' %}"> 
+                            {% if user.is_organizer %}
+                                <div style="display: flex; flex-direction: column; align-items: center; font-size: 9.5px;">
+                                    <i class="bi bi-pencil-square" style="font-size: 24px;"></i>
+                                    <span style="margin-top: 4px;"> notificaciones </span>
+                                </div>
+                            {% else %}
+                                <i class="bi bi-bell" style="font-size: 24px;"></i>
+                            {% endif %}
+                        </a>
+                    </div>
+
                     <div
                         class="collapse navbar-collapse"
                         id="navbar-content"

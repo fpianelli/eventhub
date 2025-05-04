@@ -30,4 +30,10 @@ urlpatterns = [
     path('tickets/<int:ticket_id>/edit/', views.ticket_edit, name='ticket_edit'),
     path('tickets/<int:ticket_id>/delete/', views.ticket_delete, name='ticket_delete'),
     path('events/<int:event_id>/buy_tickets/', views.ticket_form, name='ticket_form'),
+    
+    #Autor: Buiatti Pedro Nazareno
+    path('notification', views.listNotifications, name='listNotifications'),
+    path('notification/create/', views.createNotification, name='createNotification'),
+    path('notification/update/<pk>/', views.updateNotification, name='updateNotification'),
+    path('notification/delete/<int:pk>/', views.deleteNotification, name='deleteNotification'),
 ]
