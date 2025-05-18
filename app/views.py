@@ -78,6 +78,7 @@ def events(request):
 def event_detail(request, id):
     event = get_object_or_404(Event, pk=id)
     comments = event.comments.all().order_by("-created_at")
+    errors = {}
 
     #Eliminar comentario
     if "delete_comment" in request.POST:
@@ -85,6 +86,7 @@ def event_detail(request, id):
         comment = get_object_or_404(Comment, pk=comment_id)
         if comment.user == request.user:
             comment.delete()
+            messages.success(request, "Comentario eliminado correctamente")
         return redirect("event_detail", id=id)
 
     #Editar comentario
@@ -96,34 +98,58 @@ def event_detail(request, id):
             comment_id = request.POST.get("comment_id")
             comment = get_object_or_404(Comment, pk=comment_id)
             if comment.user == request.user:
-                comment.title = request.POST.get("title")
-                comment.text = request.POST.get("text")
-                comment.save()
-            return redirect("event_detail", id=id)
+                title = request.POST.get("title", "").strip() #Valor por defecto vacío
+                text = request.POST.get("text", "").strip() #Valor por defecto vacío
+
+                #Validar campos title y text
+                errors = Comment.validate(title, text)
+                
+                if not errors:  #Si no hay errores
+                    comment.title = title
+                    comment.text = text
+                    comment.save()
+                    messages.success(request, "Comentario actualizado correctamente")
+                    return redirect("event_detail", id=id)
+                else:
+                    #Si hay errores, mantenemos el comentario en edición
+                    edit_comment = comment
+                    for field, message in errors.items():
+                        messages.error(request, f"{field}: {message}")
 
         #Crear nuevo comentario
         elif form_type == "new_comment":
-            title = request.POST.get("title")
-            text = request.POST.get("text")
-            Comment.objects.create(
-                title=title,
-                text=text,
-                event=event,
-                user=request.user
-            )
-            return redirect("event_detail", id=id)
+            title = request.POST.get("title", "").strip()
+            text = request.POST.get("text", "").strip()
+
+            #Validar campos title y text
+            errors = Comment.validate(title, text)
+
+            if not errors:
+                Comment.objects.create(
+                    title=title,
+                    text=text,
+                    event=event,
+                    user=request.user
+                )
+                messages.success(request, "Comentario creado correctamente")
+                return redirect("event_detail", id=id)
+            else:
+                for field, message in errors.items():
+                    messages.error(request, f"{field}: {message}")
 
     #Carga comentario para editar
     edit_comment_id = request.GET.get("edit_comment")
     if edit_comment_id:
         edit_comment = get_object_or_404(Comment, pk=edit_comment_id)
         if edit_comment.user != request.user:
+            messages.error(request, "No tienes permiso para editar este comentario")
             return redirect("event_detail", id=id)
 
     return render(request, "app/event_detail.html", {
         "event": event,
         "comments": comments,
         "edit_comment": edit_comment,
+        "errors": errors,
         "user_is_organizer": request.user.is_organizer
     })
 
@@ -267,6 +293,7 @@ def category_delete(request, id):
 
 def my_events_comments(request):
     if not request.user.is_organizer:
+        messages.error(request, "No tienes permisos para acceder a esta página")
         return redirect('events')
 
     #Eliminar comentario
@@ -275,9 +302,13 @@ def my_events_comments(request):
         comment = get_object_or_404(Comment, pk=comment_id)
 
         #Verificar que el comentario pertenece a un evento del organizador
-        if comment.event.organizer == request.user:
-            comment.delete()
+        if comment.event.organizer != request.user:
+            messages.error(request, "No tienes permiso para eliminar este comentario")
             return redirect("my_events_comments")
+        
+        comment.delete()
+        messages.success(request, "Comentario eliminado correctamente")
+        return redirect("my_events_comments")
 
     #Obtener todos los comentarios de los eventos del organizador
     comments = Comment.objects.filter(event__organizer=request.user).select_related('event', 'user').order_by('-created_at')

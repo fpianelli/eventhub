@@ -147,6 +147,9 @@ class Comment(models.Model):
         if text == "":
             errors["text"] = "Por favor ingrese un comentario"
 
+        if len(title) > 100:
+            errors["title"] = "El título no puede exceder los 100 caracteres"
+            
         return errors
 
     #Metodo para crear un comentario
