@@ -80,6 +80,11 @@ def event_detail(request, id):
     comments = event.comments.all().order_by("-created_at")
     errors = {}
 
+    #Calcular cuenta regresiva para usuarios no organizadores
+    countdown = None
+    if not request.user.is_organizer:
+        countdown = event.get_countdown()
+
     #Eliminar comentario
     if "delete_comment" in request.POST:
         comment_id = request.POST.get("comment_id")
@@ -150,7 +155,8 @@ def event_detail(request, id):
         "comments": comments,
         "edit_comment": edit_comment,
         "errors": errors,
-        "user_is_organizer": request.user.is_organizer
+        "user_is_organizer": request.user.is_organizer,
+        "countdown": countdown
     })
 
 @login_required
