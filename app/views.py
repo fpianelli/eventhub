@@ -372,10 +372,26 @@ def refund_form(request, id=None, approval=False):
     rr = None
     if id is not None:
         rr = get_object_or_404(RefundRequest, pk=id)
+    
+    
 
     if request.method == "POST":
         ticket_code = request.POST.get("ticket_code")
         reason = request.POST.get("reason")
+
+        errors = RefundRequest.validate(ticket_code, reason, client)
+
+        if len(errors) > 0:
+            return render(
+                request,
+                "refundRequest/refund_form.html",
+                {
+                    "rr": rr,
+                    "errors": errors,
+                    "data": request.POST,
+                    "user_is_organizer": request.user.is_organizer,
+                },
+            )
 
         if not id:
             rr = RefundRequest.create_refund(client, ticket_code, reason)
