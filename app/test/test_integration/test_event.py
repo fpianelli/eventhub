@@ -393,4 +393,4 @@ class EventCountdownIntegrationTest(BaseEventTestCase):
         self.assertIsNone(response.context.get('countdown'))
 
         #Verificar que no se muestra la sección de countdown
-        self.assertNotContains(response, 'El evneto comienza en:')
+        self.assertNotContains(response, 'El evento comienza en:')
