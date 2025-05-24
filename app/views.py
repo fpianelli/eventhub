@@ -378,10 +378,26 @@ def refund_form(request, id=None, approval=False):
     rr = None
     if id is not None:
         rr = get_object_or_404(RefundRequest, pk=id)
+    
+    
 
     if request.method == "POST":
         ticket_code = request.POST.get("ticket_code")
         reason = request.POST.get("reason")
+
+        errors = RefundRequest.validate(ticket_code, reason, client)
+
+        if len(errors) > 0:
+            return render(
+                request,
+                "refundRequest/refund_form.html",
+                {
+                    "rr": rr,
+                    "errors": errors,
+                    "data": request.POST,
+                    "user_is_organizer": request.user.is_organizer,
+                },
+            )
 
         if not id:
             rr = RefundRequest.create_refund(client, ticket_code, reason)
@@ -630,6 +646,14 @@ def updateNotification(request, pk):
     current_recipients = UserNotification.objects.filter(notification=notification).count()
     is_broadcast = current_recipients == total_users
 
+    specific_recipient = None
+    if not is_broadcast:
+        specific_notification = UserNotification.objects.filter(
+            notification=notification
+        ).exclude(user=request.user).select_related('user').first()
+        if specific_notification:
+            specific_recipient = specific_notification.user
+
     if request.method == "POST":
         form = NotificationForm(request.POST, instance=notification, user=request.user)
         if form.is_valid():
@@ -681,18 +705,20 @@ def updateNotification(request, pk):
             'recipient_type': 'all' if is_broadcast else 'specific',
         }
 
-        if not is_broadcast:
-            specific = UserNotification.objects.filter(
-                notification=notification
-            ).exclude(user=request.user).select_related('user').first()
-            if specific:
-                initial_data['recipient'] = specific.user.pk  
+        if specific_recipient:
+            initial_data['recipient'] = specific_recipient.pk
 
-        form = NotificationForm(instance=notification, user=request.user, initial=initial_data)
+
+        form = NotificationForm(
+            instance=notification, 
+            user=request.user, 
+            initial=initial_data
+        )
 
     return render(request, 'notificationForm.html', {
         'form': form,
         'user_notification': user_notification,
         'users': User.objects.exclude(id=request.user.id),
-        'is_broadcast': is_broadcast
+        'is_broadcast': is_broadcast,
+        'specific_recipient': specific_recipient
     })

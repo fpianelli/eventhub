@@ -209,9 +209,25 @@ class RefundRequest(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
     def __str__(self):
         return f"RefundRequest {self.pk} - User: {self.client.username} - Ticket: {self.ticket_code} - Approved: {self.approved}"
+    
+    @classmethod
+    def validate(cls, tC, reason, client):
+        errors = {}
+
+        if tC == "":
+            errors["ticket_code"] = "Por favor ingrese el codigo del ticket a reembolsar"
+        if reason == "":
+            errors["reason"] = "Por favor ingrese la razon del reembolso"
+        if client is None:
+            errors["client"] = "Error al recuperar el cliente"
+        return errors
 
     @classmethod
     def create_refund(cls, client, tC, reason):
+        errors = RefundRequest.validate(tC, reason, client)
+        if len(errors.keys()) > 0:
+            return False, errors
+    
         return cls.objects.create(
             client=client,
             ticket_code=tC,
@@ -221,7 +237,6 @@ class RefundRequest(models.Model):
 
     def cancel_refund(self):
         self.delete()
-
 
     def approve_refund(self):
         self.approved = True
@@ -234,6 +249,9 @@ class RefundRequest(models.Model):
         self.save(update_fields=["approved", "approval_date"])
 
     def edit_refund(self, tC, reason, client):
+        errors = RefundRequest.validate(tC, reason, client)
+        if len(errors.keys()) > 0:
+            return False, errors
         self.ticket_code = tC or self.ticket_code
         self.reason = reason or self.reason
         self.client = client or self.client
