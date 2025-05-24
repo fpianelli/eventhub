@@ -1,13 +1,16 @@
 import datetime
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from .models import Event, User, Comment, RefundRequest, Ticket, Category, Notification, UserNotification 
+from .models import Event, User, Comment, RefundRequest, Ticket, Category, Notification, UserNotification, TicketDiscount
 from django.views.decorators.http import require_POST
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
 
 #Autor: Buiatti Pedro Nazareno (agregar Notification y UserNotification)
-from .forms import NotificationForm
+from .forms import NotificationForm, TicketDiscountForm
 from django.contrib import messages
 from django.db.models import Count
 from django.db.models import Q
@@ -103,7 +106,7 @@ def event_detail(request, id):
 
                 #Validar campos title y text
                 errors = Comment.validate(title, text)
-                
+
                 if not errors:  #Si no hay errores
                     comment.title = title
                     comment.text = text
@@ -305,7 +308,7 @@ def my_events_comments(request):
         if comment.event.organizer != request.user:
             messages.error(request, "No tienes permiso para eliminar este comentario")
             return redirect("my_events_comments")
-        
+
         comment.delete()
         messages.success(request, "Comentario eliminado correctamente")
         return redirect("my_events_comments")
@@ -476,6 +479,42 @@ def ticket_delete(request, ticket_id):
 
 
 
+class OrganizerRequiredMixin(AccessMixin):
+    """Verifica que el usuario sea autenticado y organizador."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            # Redirigir al login si no está autenticado
+            return self.handle_no_permission()
+        if not getattr(request.user, 'is_organizer', False):
+            # Opcional: puedes mostrar error 403 o redirigir a otra página
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("No tienes permiso para acceder a esta página.")
+        return super().dispatch(request, *args, **kwargs)
+
+class TicketDiscountListView(LoginRequiredMixin,OrganizerRequiredMixin, ListView):
+    model = TicketDiscount
+    template_name = 'app/ticketdiscount_list.html'
+
+class TicketDiscountCreateView(LoginRequiredMixin,OrganizerRequiredMixin, CreateView):
+    model = TicketDiscount
+    form_class = TicketDiscountForm
+    template_name = 'app/ticketdiscount_form.html'
+    success_url = reverse_lazy('ticketdiscount_list')
+
+class TicketDiscountUpdateView(LoginRequiredMixin,OrganizerRequiredMixin, UpdateView):
+    model = TicketDiscount
+    form_class = TicketDiscountForm
+    template_name = 'app/ticketdiscount_form.html'
+    success_url = reverse_lazy('ticketdiscount_list')
+
+class TicketDiscountDeleteView(LoginRequiredMixin,OrganizerRequiredMixin, DeleteView):
+    model = TicketDiscount
+    template_name = 'app/ticketdiscount_confirm_delete.html'
+    success_url = reverse_lazy('ticketdiscount_list')
+
+
+
 #Autor: Buiatti Pedro Nazareno
 #Para listar notificaciones
 @login_required
@@ -487,7 +526,7 @@ def listNotifications(request):
     eventId = request.GET.get('event_id')
     priority = request.GET.get('priority')
     searchQuery = request.GET.get('q', '').strip()
-    
+
     if eventId:
         notifications = notifications.filter(notification__event__id=eventId)
     if priority:
@@ -504,12 +543,12 @@ def listNotifications(request):
         notification = user_notification.notification
         recipients_count = UserNotification.objects.filter(notification=notification).count()
         is_broadcast = recipients_count == all_users_count
-        show_detail = str(user_notification.pk) == detail_id  
-        
+        show_detail = str(user_notification.pk) == detail_id
+
         notifications_data.append({
             'user_notification': user_notification,
             'is_broadcast': is_broadcast,
-            'show_detail': show_detail  
+            'show_detail': show_detail
         })
 
     numNotifications = notifications.filter(is_read=False).count()
@@ -544,7 +583,7 @@ def createNotification(request):
         form = NotificationForm(request.POST, user=user)
         if form.is_valid():
             notification = form.save(commit=False) #Guarda la instancia sin guardarla en la base aún
-            notification.save() # Se guarda en la base con el usuario creador 
+            notification.save() # Se guarda en la base con el usuario creador
 
             recipient_type = request.POST.get('recipient_type')
             if recipient_type == 'all':
@@ -588,13 +627,13 @@ def deleteNotification(request, pk):
             messages.success(request, "La notificación ha sido marcada como leída.")
 
         return redirect('listNotifications')
-    
+
     return redirect('listNotifications')
 
 #Autor: Buiatti Pedro Nazareno
 #Para editar una notificacion
 @login_required
-def updateNotification(request, pk): 
+def updateNotification(request, pk):
 
     if pk == 'all':
         UserNotification.objects.filter(user=request.user).update(is_read=True)
@@ -610,7 +649,7 @@ def updateNotification(request, pk):
     except (Notification.DoesNotExist, UserNotification.DoesNotExist):
         messages.error(request, "Notificación no encontrada o no tienes permisos")
         return redirect('listNotifications')
-    
+
     if not request.user.is_organizer:
         if request.method == "POST":
             user_notification.is_read = True
@@ -628,8 +667,8 @@ def updateNotification(request, pk):
         form = NotificationForm(request.POST, instance=notification, user=request.user)
         if form.is_valid():
             try:
-                with transaction.atomic(): 
-                  
+                with transaction.atomic():
+
                     notification = form.save()
                     recipient_type = request.POST.get('recipient_type')
                     UserNotification.objects.filter(notification=notification).exclude(user=request.user).delete()
@@ -643,7 +682,7 @@ def updateNotification(request, pk):
                                 defaults={'is_read': False}
                             )
                         msg = "Notificación actualizada para todos los usuarios"
-                    
+
                     elif recipient_type == 'specific':
                         recipient_id = request.POST.get('recipient')
                         if recipient_id:
@@ -664,7 +703,7 @@ def updateNotification(request, pk):
                                     'users': User.objects.exclude(id=request.user.id),
                                     'is_broadcast': is_broadcast
                                 })
-            
+
                     messages.success(request, msg)
                     return redirect('listNotifications')
             except Exception as e:
@@ -680,7 +719,7 @@ def updateNotification(request, pk):
                 notification=notification
             ).exclude(user=request.user).select_related('user').first()
             if specific:
-                initial_data['recipient'] = specific.user.pk  
+                initial_data['recipient'] = specific.user.pk
 
         form = NotificationForm(instance=notification, user=request.user, initial=initial_data)
 

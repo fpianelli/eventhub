@@ -2,9 +2,10 @@
 #Para manejar formularios
 
 from django import forms
-from .models import Notification, Event
+from .models import Notification, Event, TicketDiscount
 from django.forms import ModelChoiceField
 from django.db.models import QuerySet
+
 
 class NotificationForm(forms.ModelForm):
     class Meta:
@@ -27,7 +28,7 @@ class NotificationForm(forms.ModelForm):
                 'class': 'form-control'
             })
         }
-    
+
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         eventField = self.fields.get('event')
@@ -36,7 +37,23 @@ class NotificationForm(forms.ModelForm):
                 eventField.queryset = Event.objects.filter(organizer=user)
             else:
                 eventField.queryset = Event.objects.none()
-            
 
 
-         
+class TicketDiscountForm(forms.ModelForm):
+
+
+    class Meta:
+        model = TicketDiscount
+        fields = ['code', 'percentage']
+        labels = {
+            'percentage': 'Porcentaje (%)',
+        }
+        help_texts = {
+            'percentage': 'Ingrese un número entre 1 y 100',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+
