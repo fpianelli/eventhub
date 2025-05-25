@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from datetime import timedelta
 import uuid
 
 
@@ -43,6 +44,27 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+    
+    #Cuenta regresiva del evento
+    def get_countdown(self):
+        now=timezone.now()
+        delta = self.scheduled_at - now
+
+        #Evento terminado
+        if delta.total_seconds() <=0:
+            return None
+        
+        days = delta.days
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes= remainder // 60
+
+        return {
+            'days' : days,
+            'hours' : hours,
+            'minutes' : minutes,
+            'total_seconds' : delta.total_seconds(),
+            'event_datetime' : self.scheduled_at.isoformat()
+        }
 
     @classmethod
     def validate(cls, title, description, scheduled_at):

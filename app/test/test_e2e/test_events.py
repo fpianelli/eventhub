@@ -50,6 +50,15 @@ class EventBaseTest(BaseE2ETest):
             organizer=self.organizer,
         )
 
+        # Evento 3
+        self.event3 = Event.objects.create(
+            title="Evento de prueba 3",
+            description="Descripción del evento 3",
+            scheduled_at=timezone.now() - datetime.timedelta(days=1),
+            organizer=self.organizer,
+        )
+
+
     def _table_has_event_info(self):
         """Método auxiliar para verificar que la tabla tiene la información correcta de eventos"""
         # Verificar encabezados de la tabla
@@ -311,3 +320,35 @@ class EventCRUDTest(EventBaseTest):
 
         # Verificar que el evento eliminado ya no aparece en la tabla
         expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
+
+class EventCountdownE2ETest(EventBaseTest):
+    """Tests E2E para la funcionalidad de cuenta regresiva de eventos"""
+
+    def test_countdown_past_event(self):
+        """Test que verifica que no se muestra la cuenta regresiva para eventos pasados"""
+
+        #Iniciar sesión como usuario regular
+        self.login_user("usuario", "password123")
+
+        #Navegar al evento que ya ocurrió
+        self.page.goto(f"{self.live_server_url}/events/{self.event3.id}/")
+
+        #Verificar que la sección de countdown no existe
+        expect(self.page.locator(".countdown-container")).to_have_count(0)
+
+        #Verificar que no se muestra el mensaje de que el evento ha comenzado
+        expect(self.page.locator("text=¡El evento ha comenzado!")).to_have_count(0)
+
+    def test_countdown_not_displayed_organizers(self):
+        """Test que verifica que los organizadores no ven la cuenta regresiva"""
+
+        #Iniciar sesión como organizador
+        self.login_user("organizador", "password123")
+
+        #Navegar al evento 1
+        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
+
+        #Verificar que la sección de countdown no existe
+        expect(self.page.locator(".countdown-container")).to_have_count(0)
+
+        

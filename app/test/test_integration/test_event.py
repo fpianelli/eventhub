@@ -43,6 +43,13 @@ class BaseEventTestCase(TestCase):
             organizer=self.organizer,
         )
 
+        self.event3 = Event.objects.create(
+            title="Evento 3",
+            description="Descripción del evento 3",
+            scheduled_at=timezone.now() - datetime.timedelta(days=1),
+            organizer=self.organizer,
+        )
+
         # Cliente para hacer peticiones
         self.client = Client()
 
@@ -331,3 +338,59 @@ class EventDeleteViewTest(BaseEventTestCase):
 
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
+
+class EventCountdownIntegrationTest(BaseEventTestCase):
+    """Tests para la cuenta regresiva de eventos"""
+
+    def test_countdown_display_regular_user(self):
+        """Test que verifica que la cuenta regresiva se muestra correctamenta para usuarios regulares"""
+
+        self.client.login(username='regular', password='password123')
+
+        #Acceder a la página de un evento futuro
+        response = self.client.get(reverse('event_detail', args=[self.event1.id]))
+
+        #Verificar que la cuenta regresiva está en el contexto
+        self.assertIn('countdown', response.context)
+        countdown = response.context['countdown']
+
+        #Verificar que los valores de la cuenta regresiva sean coherentes
+        self.assertGreaterEqual(countdown['days'], 0)
+        self.assertGreaterEqual(countdown['hours'], 0)
+        self.assertGreaterEqual(countdown['minutes'], 0)
+        self.assertGreater(countdown['total_seconds'], 0)
+
+        #Verificar que se muestra en el template
+        self.assertContains(response, 'El evento comienza en:')
+        self.assertContains(response, 'Días')
+        self.assertContains(response, 'Horas')
+        self.assertContains(response, 'Minutos')
+
+        #Verificar que el JSON está incluido
+        self.assertContains(response, 'countdown-data')
+
+    def test_no_countdown_past_events(self):
+        """Test que verifica que no se muestra la cuenta regresiva para eventos pasados"""
+        self.client.login(username='regular', password='password123')
+
+        #Acceder a la página de un evento pasado
+        response= self.client.get(reverse('event_detail', args=[self.event3.id]))
+
+        #Verificar que no hay cuenta regresiva en el contexto
+        self.assertIsNone(response.context.get('countdown'))
+
+        #Verificar que no se muestra la sección de countdown
+        self.assertNotContains(response, 'El evento comienza en:')
+
+    def test_no_countdown_organizers(self):
+        """Test que verifica que los organizadores no ven la cuenta regresiva"""
+        self.client.login(username='organizador', password='password123')
+
+        #Acceder a la página de un evento
+        response = self.client.get(reverse('event_detail', args=[self.event1.id]))
+
+        #Verificar que no hay cuenta regresiva en el contexto
+        self.assertIsNone(response.context.get('countdown'))
+
+        #Verificar que no se muestra la sección de countdown
+        self.assertNotContains(response, 'El evento comienza en:')
