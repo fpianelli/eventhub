@@ -1,6 +1,8 @@
 #Autor: Buiatti Pedro Nazareno
 #Para manejar formularios
 
+import re
+
 from django import forms
 from .models import Notification, Event, TicketDiscount
 from django.forms import ModelChoiceField
@@ -39,8 +41,8 @@ class NotificationForm(forms.ModelForm):
                 eventField.queryset = Event.objects.none()
 
 
-class TicketDiscountForm(forms.ModelForm):
 
+class TicketDiscountForm(forms.ModelForm):
 
     class Meta:
         model = TicketDiscount
@@ -56,4 +58,18 @@ class TicketDiscountForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             field.widget.attrs['class'] = 'form-control'
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+
+        if not code.isalnum():
+            raise forms.ValidationError("El código debe ser alfanumérico, sin espacios ni símbolos.")
+
+        if not re.search(r'[A-Za-z]', code):
+            raise forms.ValidationError("El código debe contener al menos una letra.")
+
+        if not re.search(r'[0-9]', code):
+            raise forms.ValidationError("El código debe contener al menos un número.")
+
+        return code
 

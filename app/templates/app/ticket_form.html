@@ -238,7 +238,11 @@ function actualizarResumen() {
             } else {
                 cuponPorcentajeEl.textContent = "";
                 cuponCantEl.textContent = "";
-                descuentoMsgEl.textContent = data.message;
+                if (code == "") {
+                    descuentoMsgEl.textContent = "No se aplicó ningún descuento.";
+                } else {
+                    descuentoMsgEl.textContent = data.message;
+                }
             }
 
             const subtotal = (precioUnitario - descuento) * cantidad;
