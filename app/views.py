@@ -15,6 +15,8 @@ from django.contrib import messages
 from django.db.models import Count
 from django.db.models import Q
 from django.db import transaction
+from django.http import JsonResponse
+
 
 def register(request):
     if request.method == "POST":
@@ -512,6 +514,23 @@ class TicketDiscountDeleteView(LoginRequiredMixin,OrganizerRequiredMixin, Delete
     model = TicketDiscount
     template_name = 'app/ticketdiscount_confirm_delete.html'
     success_url = reverse_lazy('ticketdiscount_list')
+
+
+def validate_ticket(request):
+    code = request.GET.get('code')
+
+    if not code:
+        return JsonResponse({'valid': False, 'message': 'Datos incompletos'}, status=400)
+
+    try:
+        descuento = TicketDiscount.objects.get(code=code)
+        return JsonResponse({
+            'valid': True,
+            'discount_percent': descuento.percentage,
+            'message': f'Cupón aplicado: {descuento.percentage}% de descuento'
+        })
+    except TicketDiscount.DoesNotExist:
+        return JsonResponse({'valid': False, 'message': 'Código inválido'})
 
 
 
