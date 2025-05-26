@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% if user.is_organizer %}
+
+<div class="container mt-4" style="max-width: 600px;">
+    <h2 class="mb-3">Descuentos Disponibles</h2>
+
+    <div class="mb-3 text-end">
+        <a href="{% url 'ticketdiscount_create' %}" class="btn btn-sm btn-success">+ Crear nuevo</a>
+    </div>
+
+    {% if object_list %}
+        <div class="list-group">
+            {% for discount in object_list %}
+                <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                    <div class="small">
+                        <strong>{{ discount.code }}</strong> – {{ discount.percentage }}%
+                    </div>
+                    <div>
+                        <a href="{% url 'ticketdiscount_update' discount.pk %}" class="btn btn-sm btn-outline-primary me-1">✏️</a>
+                        <a href="{% url 'ticketdiscount_delete' discount.pk %}" class="btn btn-sm btn-outline-danger">🗑️</a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">No hay descuentos.</p>
+    {% endif %}
+</div>
+
+{% endif %}
+
+{% endblock %}
