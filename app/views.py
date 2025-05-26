@@ -482,16 +482,17 @@ def ticket_delete(request, ticket_id):
 
 
 class OrganizerRequiredMixin(AccessMixin):
-    """Verifica que el usuario sea autenticado y organizador."""
+    """Evita que el usuario no organizador acceda, sin mostrar errores ni mensajes."""
 
     def dispatch(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
-            # Redirigir al login si no está autenticado
             return self.handle_no_permission()
+
         if not getattr(request.user, 'is_organizer', False):
-            # Opcional: puedes mostrar error 403 o redirigir a otra página
-            from django.http import HttpResponseForbidden
-            return HttpResponseForbidden("No tienes permiso para acceder a esta página.")
+            # Redirige silenciosamente a la página anterior
+            referer = request.META.get('HTTP_REFERER', '/')
+            return redirect(referer)
+
         return super().dispatch(request, *args, **kwargs)
 
 class TicketDiscountListView(LoginRequiredMixin,OrganizerRequiredMixin, ListView):
