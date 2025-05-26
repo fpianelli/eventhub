@@ -318,6 +318,12 @@ def my_events_comments(request):
         "user_is_organizer": request.user.is_organizer
     })
 #AMB DE REFUND REQUESTS
+
+def is_pending(client_id):
+    request = RefundRequest.objects.filter(client__pk = client_id)
+    pending = any(r.approved is None for r in request)
+    return pending
+
 @login_required
 def refund_requests(request):
     rr = RefundRequest.objects.all().order_by("created_at")
@@ -352,9 +358,7 @@ def refund_approve(request, id):
         if request.method == "POST":
             rr = get_object_or_404(RefundRequest, pk=id)
             rr.approve_refund()
-        return redirect("refund_requests")
-    else:
-        return redirect("refund_requests")
+    return redirect("refund_requests")
 
 @login_required
 def refund_reject(request, id):
@@ -370,16 +374,22 @@ def refund_reject(request, id):
 def refund_form(request, id=None, approval=False):
     client = request.user
     rr = None
+    errors = {}
+    tickets = Ticket.objects.filter(user=client)
     if id is not None:
         rr = get_object_or_404(RefundRequest, pk=id)
+        client2 = get_object_or_404(User, id=rr.client.pk)
+        tickets = Ticket.objects.filter(user=client2)
+    else: 
+        if client and is_pending(client.pk):
+            return redirect("refund_requests")
     
-    
-
     if request.method == "POST":
         ticket_code = request.POST.get("ticket_code")
         reason = request.POST.get("reason")
 
         errors = RefundRequest.validate(ticket_code, reason, client)
+
 
         if len(errors) > 0:
             return render(
@@ -400,13 +410,15 @@ def refund_form(request, id=None, approval=False):
             return redirect('refund_detail', id=rr.pk)
         else:
             rr = get_object_or_404(RefundRequest, pk=id)
-            rr.edit_refund(ticket_code, reason, client)
+            rr.edit_refund(ticket_code, reason, client2)
             return redirect('refund_detail', id=rr.pk)
+
     return render(
         request,
         "refundRequest/refund_form.html",
-        {"rr": rr, "user_is_organizer": request.user.is_organizer},
+        {"rr": rr, "user_is_organizer": request.user.is_organizer, "tickets": tickets},
     )
+
 
 
 

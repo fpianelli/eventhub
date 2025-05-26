@@ -21,16 +21,21 @@
                         {% csrf_token %}
                         <div class="vstack gap-3">
                             <div>
-                                <label for="description" class="form-label">Codigo de ticket</label>
-                                <textarea
-                                    class="form-control"
-                                    id="ticket_code"
-                                    name="ticket_code"
-                                    rows="4"
-                                    required="">{% if rr %}{{ rr.ticket_code }}{% endif %}</textarea>
-                                    {% if errors.ticket_code %}
-                                        <p style="color:red">{{ errors.ticket_code }}</p>
-                                    {% endif %}
+                                <label for="ticket_code" class="form-label">Código de ticket</label>
+                                <select class="form-select" id="ticket_code" name="ticket_code" required>
+                                    <option value="">Selecciona un ticket</option>
+                                    {% for ticket in tickets %}
+                                        <option value="{{ ticket.ticket_code }}"
+                                            {% if rr and rr.ticket_code == ticket.ticket_code %}selected{% endif %}
+                                            {% if data.ticket_code == ticket.ticket_code %}selected{% endif %}
+                                        >
+                                            {{ ticket.ticket_code }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+                                {% if errors.ticket_code %}
+                                    <p style="color:red">{{ errors.ticket_code }}</p>
+                                {% endif %}
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
