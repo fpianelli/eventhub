@@ -45,7 +45,7 @@
 
                     <!--Autor: Buiatti Pedro Nazareno-->
                     <div style="position: relative; display: inline-block">
-                        <a href="{% url 'listNotifications' %}"> 
+                        <a href="{% url 'listNotifications' %}">
                             {% if user.is_organizer %}
                                 <div style="display: flex; flex-direction: column; align-items: center; font-size: 9.5px;">
                                     <i class="bi bi-pencil-square" style="font-size: 24px;"></i>
@@ -93,6 +93,19 @@
                         </ul>
                     </div>
 
+                    {% if user.is_organizer %}
+                   <div
+                        class="collapse navbar-collapse"
+                        id="navbar-content"
+                    >
+
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                            <li class="nav-item">
+                                {% navbar_link 'ticketdiscount_list' 'Descuento Tickets' %}
+                            </li>
+                        </ul>
+                    </div>
+                {% endif %}
 
                     <form
                         class="d-flex"

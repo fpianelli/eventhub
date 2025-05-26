@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 {% block content %}
-<div class="container">
+<div class="container ">
     <h1>{% if is_edit %}Edición de Entradas para {{ event.title }}{% else %}Compra de Entradas para {{ event.title }}{% endif %}</h1>
 
     <div class="row">
@@ -36,7 +36,7 @@
         <div class="col">
         </div>
     </div>
- 
+
     <div class="row">
         <div class="card mb-4">
             <div class="card-body">
@@ -64,6 +64,30 @@
                         {% endif %}
                     </div>
 
+<div class="mb-3">
+    <label for="discount_code" class="form-label">Código de Descuento</label>
+    <div class="input-group">
+        <input
+            type="text"
+            id="discount_code"
+            name="discount_code"
+            class="form-control"
+            placeholder="Ingresá tu código"
+        >
+        <button
+            type="button"
+            class="btn btn-outline-secondary"
+            id="apply_discount"
+        >Aplicar</button>
+    </div>
+    <div id="descuento_msg" class="form-text text-info mt-1"></div>
+    {% if errors.discount_code %}
+    <p style="color:red">{{ errors.discount_code }}</p>
+    {% endif %}
+</div>
+
+
+
                     <hr>
                     <div class="mb-4">
                         <h6 class="mb-3">Resumen de compra</h6>
@@ -71,6 +95,10 @@
                             <li class="list-group-item d-flex justify-content-between">
                                 <span>Precio por entrada:</span>
                                 <span id="precio-unitario">$0</span>
+                            </li>
+                            <li class="list-group-item d-flex justify-content-between">
+                                <span id="cupon_porcentaje">Cupon (0%):</span>
+                                <span id="cupon_cant">$0</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between">
                                 <span>Cantidad:</span>
@@ -84,13 +112,14 @@
                                 <span>Impuestos (10%):</span>
                                 <span id="impuestos">$0</span>
                             </li>
+
                             <li class="list-group-item d-flex justify-content-between fw-bold">
                                 <span>Total:</span>
                                 <span id="total">$0</span>
                             </li>
                         </ul>
                     </div>
-                    
+
 
                     {% if not is_edit %}
                         <hr>
@@ -134,7 +163,7 @@
                                         required>
                                 </div>
                             </div>
-                        
+
                             <div class="mb-3">
                                 <label for="cardholder_name" class="form-label">Titular de la Tarjeta</label>
                                 <input type="text"
@@ -144,7 +173,7 @@
                                     placeholder="Nombre como figura en la tarjeta"
                                     required>
                             </div>
-                        
+
                             <div class="form-check mb-4">
                                 <input class="form-check-input"
                                     type="checkbox"
@@ -164,44 +193,74 @@
 </div>
 
 <script>
+document.getElementById("quantity").addEventListener("keydown", function(event) {
+    event.preventDefault(); // Evita ingreso manual
+});
 
-    document.getElementById("quantity").addEventListener("keydown", function(event) {
-            event.preventDefault();  // Prevenir que el número sea ingresado por teclado.
+const precios = {
+    GENERAL: 45.99,
+    VIP: 65.99
+};
+
+const tipoSelect = document.getElementById("type_ticket");
+const cantidadInput = document.getElementById("quantity");
+
+const precioUnitarioEl = document.getElementById("precio-unitario");
+const resumenCantidadEl = document.getElementById("resumen-cantidad");
+const subtotalEl = document.getElementById("subtotal");
+const impuestosEl = document.getElementById("impuestos");
+const totalEl = document.getElementById("total");
+
+const cuponPorcentajeEl = document.getElementById("cupon_porcentaje");
+const cuponCantEl = document.getElementById("cupon_cant");
+const descuentoMsgEl = document.getElementById("descuento_msg");
+
+// Esta función se encarga de TODO
+function actualizarResumen() {
+    const tipo = tipoSelect.value;
+    const cantidad = parseInt(cantidadInput.value) || 0;
+    const precioUnitario = precios[tipo] || 0;
+    const code = document.getElementById("discount_code").value.trim();
+
+    // Mostrar precio unitario siempre
+    precioUnitarioEl.textContent = `$${precioUnitario.toFixed(2)}`;
+
+    fetch(`/validate-ticket/?code=${code}`)
+        .then(res => res.json())
+        .then(data => {
+            let descuento = 0;
+
+            if (data.valid) {
+                descuento = (data.discount_percent / 100) * precioUnitario;
+                cuponPorcentajeEl.textContent = `Cupon (${data.discount_percent}%):`;
+                cuponCantEl.textContent = `- $${descuento.toFixed(2)}`;
+                descuentoMsgEl.textContent = data.message;
+            } else {
+                cuponPorcentajeEl.textContent = "";
+                cuponCantEl.textContent = "";
+                if (code == "") {
+                    descuentoMsgEl.textContent = "No se aplicó ningún descuento.";
+                } else {
+                    descuentoMsgEl.textContent = data.message;
+                }
+            }
+
+            const subtotal = (precioUnitario - descuento) * cantidad;
+            const impuestos = subtotal * 0.10;
+            const total = subtotal + impuestos;
+
+            resumenCantidadEl.textContent = cantidad;
+            subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
+            impuestosEl.textContent = `$${impuestos.toFixed(2)}`;
+            totalEl.textContent = `$${total.toFixed(2)}`;
         });
+}
 
-
-    const precios = {
-        GENERAL: 45.99,
-        VIP: 65.99
-    };
-
-    const tipoSelect = document.getElementById("type_ticket");
-    const cantidadInput = document.getElementById("quantity");
-
-    const precioUnitarioEl = document.getElementById("precio-unitario");
-    const resumenCantidadEl = document.getElementById("resumen-cantidad");
-    const subtotalEl = document.getElementById("subtotal");
-    const impuestosEl = document.getElementById("impuestos");
-    const totalEl = document.getElementById("total");
-
-    // Este script permite calcular dinamicamente el subtotal y el total de la compra. 
-    function actualizarResumen() {
-        const tipo = tipoSelect.value;
-        const cantidad = parseInt(cantidadInput.value) || 0;
-        const precioUnitario = precios[tipo] || 0;
-        const subtotal = precioUnitario * cantidad;
-        const impuestos = subtotal * 0.10;
-        const total = subtotal + impuestos;
-
-        precioUnitarioEl.textContent = `$${precioUnitario}`;
-        resumenCantidadEl.textContent = cantidad;
-        subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
-        impuestosEl.textContent = `$${impuestos.toFixed(2)}`;
-        totalEl.textContent = `$${total.toFixed(2)}`;
-    }
-
-    tipoSelect.addEventListener("change", actualizarResumen);
-    cantidadInput.addEventListener("input", actualizarResumen);
+// Eventos que deben recalcular todo
+tipoSelect.addEventListener("change", actualizarResumen);
+cantidadInput.addEventListener("input", actualizarResumen);
+document.getElementById("apply_discount").addEventListener("click", actualizarResumen);
 </script>
+
 
 {% endblock %}

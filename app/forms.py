@@ -1,10 +1,13 @@
 #Autor: Buiatti Pedro Nazareno
 #Para manejar formularios
 
+import re
+
 from django import forms
-from .models import Notification, Event
+from .models import Notification, Event, TicketDiscount
 from django.forms import ModelChoiceField
 from django.db.models import QuerySet
+
 
 class NotificationForm(forms.ModelForm):
     class Meta:
@@ -27,7 +30,7 @@ class NotificationForm(forms.ModelForm):
                 'class': 'form-control'
             })
         }
-    
+
     def __init__(self, *args, user=None, **kwargs):
         super().__init__(*args, **kwargs)
         eventField = self.fields.get('event')
@@ -36,7 +39,37 @@ class NotificationForm(forms.ModelForm):
                 eventField.queryset = Event.objects.filter(organizer=user)
             else:
                 eventField.queryset = Event.objects.none()
-            
 
 
-         
+
+class TicketDiscountForm(forms.ModelForm):
+
+    class Meta:
+        model = TicketDiscount
+        fields = ['code', 'percentage']
+        labels = {
+            'percentage': 'Porcentaje (%)',
+        }
+        help_texts = {
+            'percentage': 'Ingrese un número entre 1 y 100',
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = 'form-control'
+
+    def clean_code(self):
+        code = self.cleaned_data.get('code')
+
+        if not code.isalnum():
+            raise forms.ValidationError("El código debe ser alfanumérico, sin espacios ni símbolos.")
+
+        if not re.search(r'[A-Za-z]', code):
+            raise forms.ValidationError("El código debe contener al menos una letra.")
+
+        if not re.search(r'[0-9]', code):
+            raise forms.ValidationError("El código debe contener al menos un número.")
+
+        return code
+

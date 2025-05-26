@@ -2,6 +2,7 @@ import datetime
 
 from django.test import TestCase
 from django.utils import timezone
+from datetime import timedelta
 
 from app.models import Event, User
 
@@ -140,3 +141,41 @@ class EventModelTest(TestCase):
         self.assertEqual(updated_event.title, original_title)
         self.assertEqual(updated_event.description, new_description)
         self.assertEqual(updated_event.scheduled_at, original_scheduled_at)
+
+    def test_get_countdown_future_event(self):
+        """Test que verifica el calculo correcto de la cuenta regresiva para eventos futuros"""
+        now = timezone.now()
+        future_time = now + timedelta(days=2, hours=3, minutes=30)
+        event = Event.objects.create(
+            title="Evento futuro",
+            description="Descripcion",
+            scheduled_at=future_time,
+            organizer=self.organizer
+        )
+
+        countdown= event.get_countdown()
+        self.assertIsNotNone(countdown)
+        self.assertEqual(countdown['days'], 2)
+        self.assertEqual(countdown['hours'], 3)
+        #Permite hasta 1 minuto de diferencia
+        self.assertAlmostEqual(countdown['minutes'], 30, delta=1) 
+
+        expected_seconds= 2*24*3600 + 3*3600 + 30*60 
+        #Permite hasta 1 minuto de diferencia
+        self.assertAlmostEqual(countdown['total_seconds'], expected_seconds, delta=60) 
+
+        self.assertEqual(countdown['event_datetime'], future_time.isoformat())
+
+    def test_get_countdown_past_event(self):
+        """Test que verifica que devuelve None para eventos pasados"""
+        past_time = timezone.now() - timedelta(days=1)
+        event = Event.objects.create(
+            title="Evento pasado",
+            description="Descripcion",
+            scheduled_at=past_time,
+            organizer=self.organizer
+        )
+
+        countdown = event.get_countdown()
+        self.assertIsNone(countdown)
+
