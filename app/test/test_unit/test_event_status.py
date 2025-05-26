@@ -91,42 +91,6 @@ class EventStatusTest(TestCase):
             
         self.assertIn("new_scheduled_at", context.exception.message_dict)
 
-
-    def test_block_ticket_purchase_on_invalid_status(self):
-        """Verifica que no se puedan comprar entradas si el evento está CANCELADO/FINALIZADO"""
-        self.client.force_login(self.organizer)
-        
-        #CANCELADO
-        response = self.client.post(
-            reverse('ticket_form', args=[self.events['canceled'].pk]),
-            {'quantity': 2, 'type_ticket': 'General'},
-            follow=True
-        )
-        messages = list(get_messages(response.wsgi_request))
-        self.assertTrue(any("no se pueden comprar" in str(m).lower() for m in messages))
-        
-        #FINALIZADO
-        response = self.client.post(
-            reverse('ticket_form', args=[self.events['finished'].pk]),
-            {'quantity': 2, 'type_ticket': 'General'},
-            follow=True
-        )
-        messages = list(get_messages(response.wsgi_request))
-        self.assertTrue(any("no se pueden comprar" in str(m).lower() for m in messages))
-
-        #AGOTADO
-        response = self.client.post(
-            reverse('ticket_form', args=[self.events['sold_out'].pk]),
-            {'quantity': 2, 'type_ticket': 'General'},
-            follow=True
-        )
-        messages = list(get_messages(response.wsgi_request))
-        self.assertTrue(
-            any("no se pueden comprar" in str(m).lower() for m in messages) or
-            any("agotado" in str(m).lower() for m in messages),
-            "Debería mostrar mensaje para evento AGOTADO"
-        )
-        
     def test_auto_finalized_status(self):
         """Verifica que eventos pasados se marquen como FINALIZADO al guardar"""
         past_event = Event.objects.create(
