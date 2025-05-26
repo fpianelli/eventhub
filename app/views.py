@@ -495,23 +495,32 @@ class OrganizerRequiredMixin(AccessMixin):
 
         return super().dispatch(request, *args, **kwargs)
 
-class TicketDiscountListView(LoginRequiredMixin,OrganizerRequiredMixin, ListView):
+class OrganizerContextMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["user_is_organizer"] = getattr(self.request.user, "is_organizer", False)
+        return context
+
+
+class TicketDiscountListView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, ListView):
     model = TicketDiscount
     template_name = 'app/ticketdiscount_list.html'
 
-class TicketDiscountCreateView(LoginRequiredMixin,OrganizerRequiredMixin, CreateView):
+
+
+class TicketDiscountCreateView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, CreateView):
     model = TicketDiscount
     form_class = TicketDiscountForm
     template_name = 'app/ticketdiscount_form.html'
     success_url = reverse_lazy('ticketdiscount_list')
 
-class TicketDiscountUpdateView(LoginRequiredMixin,OrganizerRequiredMixin, UpdateView):
+class TicketDiscountUpdateView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, UpdateView):
     model = TicketDiscount
     form_class = TicketDiscountForm
     template_name = 'app/ticketdiscount_form.html'
     success_url = reverse_lazy('ticketdiscount_list')
 
-class TicketDiscountDeleteView(LoginRequiredMixin,OrganizerRequiredMixin, DeleteView):
+class TicketDiscountDeleteView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, DeleteView):
     model = TicketDiscount
     template_name = 'app/ticketdiscount_confirm_delete.html'
     success_url = reverse_lazy('ticketdiscount_list')
