@@ -491,15 +491,15 @@ def ticket_form(request, event_id):
     event = get_object_or_404(Event, id=event_id)
 
     #AUTOR: Buiatti Pedro Nazareno 
-    event.check_status()
-    if event.status in ['CANCELADO','FINALIZADO']:
-        messages.error(request, f"No se pueden comprar entradas para este evento por que esá {event.get_status_display().lower()}.")
-        return redirect('event_detail', id=event_id)
-    
-    #AUTOR: Buiatti Pedro Nazareno 
     if event.status == 'AGOTADO':
         messages.error(request, "Las entradas para este evento están agotadas.")
         return redirect('event_detail', id=event_id)
+
+    #AUTOR: Buiatti Pedro Nazareno 
+    if event.status in ['CANCELADO', 'FINALIZADO', 'AGOTADO']:
+        messages.error(request, "No se pueden comprar entradas para este evento")
+        return redirect('event_detail', id=event_id)
+    
 
     if request.method == 'POST':
 
@@ -535,6 +535,7 @@ def ticket_form(request, event_id):
         ticket.save()
 
         #AUTOR: Buiatti Pedro Nazareno
+        event.refresh_from_db()
         ticket.event.save()
 
         return redirect('ticket_detail')

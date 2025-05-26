@@ -18,4 +18,5 @@ class Command(BaseCommand):
 #crontab -e 
 # 0 0 * * * /venv/bin/python /eventhub/manage.py update_finished_events (configuracion, mas o menos)
 
-# python manage.py update_finished_events (prueba manual)
+# python manage.py test app.test.test_unit.test_event_status
+

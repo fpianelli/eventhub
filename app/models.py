@@ -100,6 +100,9 @@ class Event(models.Model):
         if not isinstance(self.max_capacity, int):
             errors["max_capacity"] = "La capacidad máxima debe ser un número entero."
 
+        if self.status == 'AGOTADO' and self.tickets_sold < self.max_capacity:
+            errors['status'] = 'No se puede marcar como AGOTADO si no se alcanzó la capacidad máxima'
+
         if errors:
             raise ValidationError(errors)
     
