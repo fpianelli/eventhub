@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from datetime import timedelta
 import uuid
 from django.core.validators import RegexValidator
 from django.core.exceptions import ValidationError
@@ -47,6 +48,27 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+    
+    #Cuenta regresiva del evento
+    def get_countdown(self):
+        now=timezone.now()
+        delta = self.scheduled_at - now
+
+        #Evento terminado
+        if delta.total_seconds() <=0:
+            return None
+        
+        days = delta.days
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes= remainder // 60
+
+        return {
+            'days' : days,
+            'hours' : hours,
+            'minutes' : minutes,
+            'total_seconds' : delta.total_seconds(),
+            'event_datetime' : self.scheduled_at.isoformat()
+        }
 
     @classmethod
     def validate(cls, title, description, scheduled_at):
@@ -191,9 +213,25 @@ class RefundRequest(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
     def __str__(self):
         return f"RefundRequest {self.pk} - User: {self.client.username} - Ticket: {self.ticket_code} - Approved: {self.approved}"
+    
+    @classmethod
+    def validate(cls, tC, reason, client):
+        errors = {}
+
+        if tC == "":
+            errors["ticket_code"] = "Por favor ingrese el codigo del ticket a reembolsar"
+        if reason == "":
+            errors["reason"] = "Por favor ingrese la razon del reembolso"
+        if client is None:
+            errors["client"] = "Error al recuperar el cliente"
+        return errors
 
     @classmethod
     def create_refund(cls, client, tC, reason):
+        errors = RefundRequest.validate(tC, reason, client)
+        if len(errors.keys()) > 0:
+            return False, errors
+    
         return cls.objects.create(
             client=client,
             ticket_code=tC,
@@ -203,7 +241,6 @@ class RefundRequest(models.Model):
 
     def cancel_refund(self):
         self.delete()
-
 
     def approve_refund(self):
         self.approved = True
@@ -216,6 +253,9 @@ class RefundRequest(models.Model):
         self.save(update_fields=["approved", "approval_date"])
 
     def edit_refund(self, tC, reason, client):
+        errors = RefundRequest.validate(tC, reason, client)
+        if len(errors.keys()) > 0:
+            return False, errors
         self.ticket_code = tC or self.ticket_code
         self.reason = reason or self.reason
         self.client = client or self.client

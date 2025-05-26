@@ -89,7 +89,7 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="recipient_type"
                                         id="all_users" value="all"
-                                        {% if form.initial.recipient_type == 'all' or not form.initial.recipient_type %}checked{% endif %}
+                                        {% if is_broadcast %}checked{% endif %}
                                         onclick="document.getElementById('user_selection').classList.add('d-none')">
                                     <label class="form-check-label" for="all_users">Todos los usuarios</label>
                                 </div>
@@ -97,17 +97,17 @@
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="recipient_type"
                                         id="specific_user" value="specific"
-                                        {% if form.initial.recipient_type == 'specific' %}checked{% endif %}
+                                        {% if not is_broadcast %}checked{% endif %}
                                         onclick="document.getElementById('user_selection').classList.remove('d-none')">
                                     <label class="form-check-label" for="specific_user">Usuario específico</label>
                                 </div>
 
-                                <div id="user_selection" class="mt-2 {% if form.initial.recipient_type != 'specific' %}d-none{% endif %}">
+                                <div id="user_selection" class="mt-2 {% if is_broadcast %}d-none{% endif %}">
                                     <select name="recipient" id="id_recipient" class="form-select">
                                         <option value="">-----</option>
                                         {% for user in users %}
                                             <option value="{{ user.id }}"
-                                                {% if form.initial.recipient == user.id %}selected{% endif %}>
+                                                {% if specific_recipient and specific_recipient.id == user.id %}selected{% endif %}>
                                                 {{ user.username }}
                                             </option>
                                         {% endfor %}

@@ -11,6 +11,9 @@
                     Solicitar reembolso
                 {% endif %}
             </h1>
+            {% if errors.client %}
+                <p style="color:red">{{ errors.client }}</p>
+            {% endif %}
 
             <div class="card">
                 <div class="card-body">
@@ -25,6 +28,9 @@
                                     name="ticket_code"
                                     rows="4"
                                     required="">{% if rr %}{{ rr.ticket_code }}{% endif %}</textarea>
+                                    {% if errors.ticket_code %}
+                                        <p style="color:red">{{ errors.ticket_code }}</p>
+                                    {% endif %}
                             </div>
                             <div class="row">
                                 <div class="col-md-6">
@@ -36,6 +42,9 @@
                                         type="string"
                                         value="{% if rr %}{{ rr.reason }}{% endif %}"
                                         name="reason" />
+                                    {% if errors.reason %}
+                                        <p style="color:red">{{ errors.reason }}</p>
+                                    {% endif %}
                                 </div>
                             </div>
                             {% if rr.id %}
