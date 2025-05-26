@@ -31,6 +31,11 @@
                 <th>Título</th>
                 <th>Descripción</th>
                 <th>Fecha</th>
+
+                <!--AUTOR: Buiatti Pedro Nazareno-->
+                <th>Estado</th>
+                <th>Disponibilidad</th>
+
                 <th>Categorias</th>
                 <th>Acciones</th>
             </tr>
@@ -41,20 +46,36 @@
                     <td>{{ event.title }}</td>
                     <td>{{ event.description }}</td>
                     <td>{{ event.scheduled_at|date:"d b Y, H:i" }}</td>
+
+                    <!--AUTOR: Buiatti Pedro Nazareno-->
                     <td>
+                        <span class="badge bg-{% if event.status == 'ACTIVO' %}success{% elif event.status == 'CANCELADO' %}danger{% elif event.status == 'REPROGRAMADO' %}warning{% elif event.status == 'AGOTADO' %}secondary{% else %}dark{% endif %}">
+                            {{ event.get_status_display }}
+                        </span>
+                    </td>
 
-    {% with active_categories=event.categories.all|dictsort:"id" %}
-    {% for category in active_categories %}
-        {% if category.is_active %}
-            <span class="badge bg-light text-dark border border-primary me-1">{{ category.name }}</span>
-        {% endif %}
-    {% empty %}
-        <span class="text-muted">Sin categorías</span>
-    {% endfor %}
-{% endwith %}
+                    <!--AUTOR: Buiatti Pedro Nazareno-->
+                    <td>
+                        {% if event.status == 'ACTIVO' %}
+                            {{ event.available_tickets }} / {{ event.max_capacity }}
+                        {% elif event.status == 'AGOTADO' %}
+                            Agotado
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
 
-
-</td>
+                    <td>
+                        {% with active_categories=event.categories.all|dictsort:"id" %}
+                            {% for category in active_categories %}
+                                {% if category.is_active %}
+                                    <span class="badge bg-light text-dark border border-primary me-1">{{ category.name }}</span>
+                                {% endif %}
+                            {% empty %}
+                                <span class="text-muted">Sin categorías</span>
+                            {% endfor %}
+                        {% endwith %}
+                    </td>
 
                     <td>
                         <div class="hstack gap-1">

@@ -4,6 +4,9 @@ from django.utils import timezone
 from django.conf import settings
 import uuid
 
+#AUTOR: Buiatti Pedro Nazareno
+from django.db.models import Sum
+from django.core.exceptions import ValidationError
 
 class User(AbstractUser):
     is_organizer = models.BooleanField(default=False)
@@ -33,6 +36,28 @@ class User(AbstractUser):
 
 
 class Event(models.Model):
+
+    #AUTOR: Buiatti Pedro Nazareno
+    STATUS_CHOICES = [
+        ('ACTIVO', 'Activo'),
+        ('CANCELADO', 'Cancelado'),
+        ('REPROGRAMADO', 'Reprogramado'),
+        ('AGOTADO', 'Agotado'), 
+        ('FINALIZADO', 'Finalizado'),
+    ]
+
+    #AUTOR: Buiatti Pedro Nazareno
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='ACTIVO'
+    )
+
+    #AUTOR: Buiatti Pedro Nazareno
+    max_capacity = models.PositiveBigIntegerField(default=100)
+    new_scheduled_at = models.DateTimeField(null=True, blank=True) 
+
+
     title = models.CharField(max_length=200)
     description = models.TextField()
     scheduled_at = models.DateTimeField()
@@ -43,9 +68,66 @@ class Event(models.Model):
 
     def __str__(self):
         return self.title
+    
+    #AUTOR: Buiatti Pedro Nazareno
+    @property
+    def tickets_sold(self):
+        if not self.pk:
+            return 0
+        return self.ticket_set.aggregate(total=Sum('quantity'))['total'] or 0
 
+    #AUTOR: Buiatti Pedro Nazareno
+    @property
+    def available_tickets(self):
+        return self.max_capacity - self.tickets_sold
+
+    #AUTOR: Buiatti Pedro Nazareno
+    @property
+    def is_sold_out(self):
+        return self.tickets_sold >= self.max_capacity
+    
+    #AUTOR: Buiatti Pedro Nazareno
+    def clean(self):
+        errors = {}
+        if self.status == 'REPROGRAMADO' and not self.new_scheduled_at:
+            errors['new_scheduled_at'] = 'Debe ingresar una nueva fecha para reprogramación'
+        
+        if self.pk:
+            original = Event.objects.get(pk=self.pk)
+            if original.status in ['AGOTADO', 'FINALIZADO'] and self.status != original.status:
+                errors['status'] = 'No se puede modificar este estado'
+        
+        if not isinstance(self.max_capacity, int):
+            errors["max_capacity"] = "La capacidad máxima debe ser un número entero."
+
+        if errors:
+            raise ValidationError(errors)
+    
+    #AUTOR: Buiatti Pedro Nazareno
+    def save(self, *args, **kwargs):
+        now = timezone.now()
+        original_status = None
+
+        if self.pk:
+            original = Event.objects.get(pk=self.pk)
+            original_status = original.status
+
+        new_status = self.status
+        if self.tickets_sold >= self.max_capacity:
+            new_status = 'AGOTADO'
+        elif self.scheduled_at < now:
+            new_status = 'FINALIZADO'
+
+        if original_status in ['AGOTADO', 'FINALIZADO'] and new_status != original_status:
+            raise ValidationError("Eventos AGOTADO/FINALIZADO no pueden modificarse")
+
+        self.status = new_status 
+        super().save(*args, **kwargs)
+
+
+    #AUTOR: Buiatti Pedro Nazareno (agregar parametros status=None, new_scheduled_at=None)
     @classmethod
-    def validate(cls, title, description, scheduled_at):
+    def validate(cls, title, description, scheduled_at, status=None, new_scheduled_at=None):
         errors = {}
 
         if title == "":
@@ -53,13 +135,26 @@ class Event(models.Model):
 
         if description == "":
             errors["description"] = "Por favor ingrese una descripcion"
+
+        #AUTOR: Buiatti Pedro Nazareno
+        if status == 'REPROGRAMADO' and not new_scheduled_at:
+            errors["new_scheduled_at"] = "Debe ingresar una nueva fecha para eventos reprogramados"
+        
         return errors
 
+    #AUTOR: Buiatti Pedro Nazareno (agregar parametro max_capacity=100)
     @classmethod
-    def new(cls, title, description, scheduled_at, organizer):
+    def new(cls, title, description, scheduled_at, organizer, max_capacity=100):
         errors = Event.validate(title, description, scheduled_at)
 
-        if len(errors.keys()) > 0:
+        #AUTOR: Buiatti Pedro Nazareno
+        try:
+            max_capacity = int(max_capacity)  
+        except (ValueError, TypeError):
+            errors["max_capacity"] = "Capacidad máxima debe ser un número válido."
+        
+        #AUTOR: Buiatti Pedro Nazareno
+        if errors:
             return False, errors
 
         Event.objects.create(
@@ -67,17 +162,36 @@ class Event(models.Model):
             description=description,
             scheduled_at=scheduled_at,
             organizer=organizer,
+
+            #AUTOR: Buiatti Pedro Nazareno
+            max_capacity=max_capacity
+
         )
 
         return True, None
-
-    def update(self, title, description, scheduled_at, organizer):
+    
+    #AUTOR: Buiatti Pedro Nazareno (agregar status, new_scheduled_at=None)
+    def update(self, title, description, scheduled_at, organizer, status, new_scheduled_at=None):
+        
+        #AUTOR: Buiatti Pedro Nazareno
+        allowed_statuses = ['ACTIVO', 'CANCELADO', 'REPROGRAMADO']
+        if status not in allowed_statuses:
+            raise ValidationError("Estado no permitido")
+        
         self.title = title or self.title
         self.description = description or self.description
         self.scheduled_at = scheduled_at or self.scheduled_at
         self.organizer = organizer or self.organizer
 
+        #AUTOR: Buiatti Pedro Nazareno
+        self.status = status
+        self.new_scheduled_at = new_scheduled_at if status == 'REPROGRAMADO' else None
+    
+        self.clean()
         self.save()
+
+
+
 
 class Category(models.Model):
     name = models.CharField(max_length=20)

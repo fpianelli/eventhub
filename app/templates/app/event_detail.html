@@ -5,14 +5,40 @@
     <div class="row">
         <div class="d-flex justify-content-between align-items-center">
             <h1>{{ event.title }}</h1>
-            {% if not user_is_organizer %}
+
+            <!--AUTOR: Buiatti Pedro Nazareno-->
+            <span class="badge bg-{% if event.status == 'ACTIVO' %}
+                    success
+                {% elif event.status == 'CANCELADO' %}
+                    danger
+                {% elif event.status == 'REPROGRAMADO' %}
+                    warning
+                {% elif event.status == 'AGOTADO' %}
+                    secondary
+                {% else %}
+                    dark
+                {% endif %}">
+
+                {{ event.get_status_display }}
+
+            </span>
+
+            <!--AUTOR: Buiatti Pedro Nazareno (agregar la condición de que el evento esté activo)-->
+            {% if not user_is_organizer and event.status == 'ACTIVO' and not event.is_sold_out %}
+                <a href="{% url 'ticket_form' event.id %}" class="btn btn-primary">
+                    <i class="bi bi-ticket-perforated me-2" aria-hidden="true"></i> Comprar Entradas
+                </a>
+            {% endif %}
+            
+            <!--{% if not user_is_organizer %}
                 <a
                 href="{% url 'ticket_form' event.id %}"
                 class="btn btn-primary"
             >
                 <i class="bi bi-ticket-perforated me-2" aria-hidden="true"></i> Comprar Entradas
             </a>
-            {% endif %}
+            {% endif %}-->
+
             {% if user_is_organizer %}
                 <a
                     href="{% url 'event_edit' event.id %}"
@@ -29,6 +55,31 @@
         <div class="card">
             <div class="card-body">
                 <h5 class="card-title">Detalles del Evento</h5>
+
+                <!--AUTOR: Buiatti Pedro Nazareno-->
+                {% if event.status == 'CANCELADO' %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Este evento ha sido cancelado.
+                    </div>
+                {% elif event.status == 'REPROGRAMADO' %}
+                    <div class="alert alert-warning">
+                        <i class="bi bi-calendar-event me-2"></i>
+                        Este evento ha sido reprogramado para el {{ event.new_scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}.
+                    </div>
+                {% elif event.status == 'AGOTADO' %}
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-ticket-perforated me-2"></i>
+                        Las entradas para este evento están agotadas.
+                    </div>
+                {% elif event.status == 'FINALIZADO' %}
+                    <div class="alert alert-dark">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        Este evento ya ha finalizado.
+                    </div>
+                {% endif %}
+
+
                 <p class="card-text">{{ event.description }}</p>
                 <div class="mt-4">
                     <div class="d-flex align-items-center mb-3">
@@ -40,6 +91,20 @@
                             <p class="mb-0">{{ event.scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
                         </div>
                     </div>
+
+                    <!--AUTOR: Buiatti Pedro Nazareno-->
+                    {% if event.status == 'REPROGRAMADO' %}
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="bg-light rounded-circle p-2 me-3">
+                                <i class="bi bi-calendar2-event text-warning"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Nueva Fecha y Hora</h6>
+                                <p class="mb-0">{{ event.new_scheduled_at|date:"l, j \\d\\e F \\d\\e Y, H:i" }}</p>
+                            </div>
+                        </div>
+                    {% endif %}
+
                     <div class="d-flex align-items-center mb-3">
                         <div class="bg-light rounded-circle p-2 me-3">
                             <i class="bi bi-person text-primary"></i>
@@ -49,21 +114,33 @@
                             <p class="mb-0">{{ event.organizer }}</p>
                         </div>
                     </div>
+
+                    <!--AUTOR: Buiatti Pedro Nazareno-->
                     <div class="d-flex align-items-center mb-3">
-    <div class="bg-light rounded-circle p-2 me-3">
-        <i class="bi bi-tags text-primary"></i> <!-- Icono de etiquetas -->
-    </div>
-    <div>
-        <h6 class="mb-0">Categorías</h6>
-        <div class="mt-1">
-            {% for category in event.categories.all %}
-                <span class="badge bg-light text-dark border border-primary me-1">{{ category.name }}</span>
-            {% empty %}
-                <p class="mb-0">Sin categorías</p>
-            {% endfor %}
-        </div>
-    </div>
-</div>
+                        <div class="bg-light rounded-circle p-2 me-3">
+                            <i class="bi bi-ticket-perforated text-primary"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Disponibilidad</h6>
+                            <p class="mb-0">{{ event.available_tickets }} entradas disponibles de {{ event.max_capacity }}</p>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="bg-light rounded-circle p-2 me-3">
+                            <i class="bi bi-tags text-primary"></i> <!-- Icono de etiquetas -->
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Categorías</h6>
+                            <div class="mt-1">
+                                {% for category in event.categories.all %}
+                                    <span class="badge bg-light text-dark border border-primary me-1">{{ category.name }}</span>
+                                {% empty %}
+                                    <p class="mb-0">Sin categorías</p>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -165,5 +242,49 @@
     </div>
 </div>
 
+<!--AUTOR: Buiatti Pedro Nazareno-->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const statusSelect = document.getElementById('status');
+        const reproFields = document.getElementById('reprogrammed_fields');
+        const newDateInput = document.getElementById('new_date');
+        const newTimeInput = document.getElementById('new_time');
+        const eventForm = document.querySelector('form');
+
+        statusSelect.addEventListener('change', function() {
+            if (this.value === 'REPROGRAMADO') {
+                reproFields.style.display = 'block';
+                newDateInput.required = true;
+                newTimeInput.required = true;
+            } else {
+                reproFields.style.display = 'none';
+                newDateInput.required = false;
+                newTimeInput.required = false;
+            }
+        });
+
+        eventForm.addEventListener('submit', function(e) {
+            if (statusSelect.value === 'REPROGRAMADO') {
+                if (!newDateInput.value || !newTimeInput.value) {
+                    e.preventDefault();
+                    alert('Para reprogramar un evento debe ingresar fecha y hora');
+                    
+                    if (!newDateInput.value) {
+                        newDateInput.classList.add('is-invalid');
+                    }
+                    if (!newTimeInput.value) {
+                        newTimeInput.classList.add('is-invalid');
+                    }
+                }
+            }
+        });
+
+        [newDateInput, newTimeInput].forEach(input => {
+            input.addEventListener('input', function() {
+                this.classList.remove('is-invalid');
+            });
+        });
+    });
+</script>
 
 {% endblock %}

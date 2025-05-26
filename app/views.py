@@ -189,12 +189,53 @@ def event_form(request, id=None):
             datetime.datetime(int(year), int(month), int(day), int(hour), int(minutes))
         )
 
+        #AUTOR: Buiatti Pedro Nazareno
+        status = request.POST.get("status")
+        new_date = request.POST.get("new_date")
+        new_time = request.POST.get("new_time")
+        max_capacity = request.POST.get("max_capacity", 100)
+        try:
+            max_capacity = int(max_capacity)
+        except ValueError:
+            messages.error(request, '❌ La capacidad máxima debe ser un número entero válido (ej: 100, 200)')
+            return redirect('event_edit', id=id) if id else redirect('event_form')
+
+        #AUTOR: Buiatti Pedro Nazareno
+        if status == 'REPROGRAMADO' and (not new_date or not new_time):
+            messages.error(request, "Debe ingresar fecha y hora para reprogramar un evento")
+            return redirect('event_edit', id=id) if id else redirect('event_form')
+
+        #AUTOR: Buiatti Pedro Nazareno
+        new_scheduled_at = None
+        if status == 'REPROGRAMADO' and new_date and new_time:
+            [new_year, new_month, new_day] = new_date.split("-")
+            [new_hour, new_minutes] = new_time.split(":")
+            new_scheduled_at = timezone.make_aware(
+                datetime.datetime(int(new_year), int(new_month), int(new_day), int(new_hour), int(new_minutes))
+            )
+
+        #AUTOR: Buiatti Pedro Nazareno
+        if status != 'REPROGRAMADO':
+            new_scheduled_at = None
+
+        #AUTOR: Buiatti Pedro Nazareno
+        allowed_statuses = ['ACTIVO', 'CANCELADO', 'REPROGRAMADO']
+        if status not in allowed_statuses:
+            messages.error(request, "Estado no permitido")
+            return redirect('event_edit', id=id) if id else redirect('event_form')
+
         if id is None:
             event = Event.objects.create(
                 title=title,
                 description=description,
                 scheduled_at=scheduled_at,
                 organizer=request.user,
+
+                #AUTOR: Buiatti Pedro Nazareno
+                max_capacity= max_capacity,
+                status='ACTIVO',
+                new_scheduled_at=new_scheduled_at
+
             )
         else:
             event = get_object_or_404(Event, pk=id)
@@ -202,6 +243,11 @@ def event_form(request, id=None):
             event.description = description
             event.scheduled_at = scheduled_at
             event.organizer = request.user
+
+            #AUTOR: Buiatti Pedro Nazareno
+            event.status = status
+            event.new_scheduled_at = new_scheduled_at
+
             event.save()
 
             # Si es edición, limpiamos categorías anteriores
@@ -214,11 +260,25 @@ def event_form(request, id=None):
 
         return redirect("events")
 
-    event = {}
+    event = None
     selected_category_ids = []
     if id is not None:
         event = get_object_or_404(Event, pk=id)
         selected_category_ids = event.categories.values_list('id', flat=True)
+
+
+    #AUTOR: Buiatti Pedro Nazareno
+    status_choices = [
+        ('ACTIVO', 'Activo'),
+        ('CANCELADO', 'Cancelado'),
+        ('REPROGRAMADO', 'Reprogramado')
+    ]
+    
+    # Si el evento ya está AGOTADO o FINALIZADO, mostramos el estado como texto
+    if event and event.status in ['AGOTADO', 'FINALIZADO']:
+        readonly_status = True
+    else:
+        readonly_status = False
 
     return render(
         request,
@@ -228,6 +288,11 @@ def event_form(request, id=None):
             "categories": categories,
             "selected_category_ids": selected_category_ids,
             "user_is_organizer": request.user.is_organizer,
+
+            #AUTOR: Buiatti Pedro Nazareno
+            "status_choices": status_choices,
+            'readonly_status': readonly_status,
+            'current_status': event.status if event else None
         },
     )
 
@@ -418,10 +483,23 @@ def ticket_detail(request):
         tickets = Ticket.objects.filter(user=request.user).order_by("buy_date")
     return render(request, "app/ticket_detail.html", {"tickets": tickets, "is_organizer": request.user.is_organizer,})
 
+
+
 @login_required
 def ticket_form(request, event_id):
 
     event = get_object_or_404(Event, id=event_id)
+
+    #AUTOR: Buiatti Pedro Nazareno 
+    event.check_status()
+    if event.status in ['CANCELADO','FINALIZADO']:
+        messages.error(request, f"No se pueden comprar entradas para este evento por que esá {event.get_status_display().lower()}.")
+        return redirect('event_detail', id=event_id)
+    
+    #AUTOR: Buiatti Pedro Nazareno 
+    if event.status == 'AGOTADO':
+        messages.error(request, "Las entradas para este evento están agotadas.")
+        return redirect('event_detail', id=event_id)
 
     if request.method == 'POST':
 
@@ -437,6 +515,16 @@ def ticket_form(request, event_id):
                 'data': request.POST,
                 'is_edit': False,
             })
+        
+        #AUTOR: Buiatti Pedro Nazareno 
+        if (event.tickets_sold + int(quantity)) > event.max_capacity:
+            messages.error(request, f"No hay suficientes entradas disponibles. Solo quedan {event.max_capacity - event.tickets_sold} entradas.")
+            return render(request, "app/ticket_form.html", {
+                'event': event,
+                'errors': {'quantity': 'Cantidad no disponible'},
+                'data': request.POST,
+                'id_edit': False,
+            })
 
         ticket = Ticket(
             user=request.user,
@@ -445,6 +533,10 @@ def ticket_form(request, event_id):
             event=event
         )
         ticket.save()
+
+        #AUTOR: Buiatti Pedro Nazareno
+        ticket.event.save()
+
         return redirect('ticket_detail')
     return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False, 'data': {}, 'errors': {},})
 
