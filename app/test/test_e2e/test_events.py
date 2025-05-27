@@ -66,11 +66,12 @@ class EventBaseTest(BaseE2ETest):
         expect(headers.nth(0)).to_have_text("Título")
         expect(headers.nth(1)).to_have_text("Descripción")
         expect(headers.nth(2)).to_have_text("Fecha")
-        expect(headers.nth(3)).to_have_text("Acciones")
+        expect(headers.nth(3)).to_have_text("Categorias")
+        expect(headers.nth(4)).to_have_text("Acciones")
 
         # Verificar que los eventos aparecen en la tabla
         rows = self.page.locator("table tbody tr")
-        expect(rows).to_have_count(2)
+        expect(rows).to_have_count(3)
 
         # Verificar datos del primer evento
         row0 = rows.nth(0)
@@ -241,9 +242,9 @@ class EventCRUDTest(EventBaseTest):
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
 
-        # Verificar que ahora hay 3 eventos
+        # Verificar que ahora hay 4 eventos
         rows = self.page.locator("table tbody tr")
-        expect(rows).to_have_count(3)
+        expect(rows).to_have_count(4)
 
         row = self.page.locator("table tbody tr").last
         expect(row.locator("td").nth(0)).to_have_text("Evento de prueba E2E")
@@ -259,10 +260,10 @@ class EventCRUDTest(EventBaseTest):
         self.page.goto(f"{self.live_server_url}/events/")
 
         # Hacer clic en el botón editar del primer evento
-        self.page.get_by_role("link", name="Editar").first.click()
+        self.page.get_by_role("link", name="Editar").nth(1).click()
 
         # Verificar que estamos en la página de edición
-        expect(self.page).to_have_url(f"{self.live_server_url}/events/{self.event1.id}/edit/")
+        expect(self.page).to_have_url(f"{self.live_server_url}/events/{self.event2.id}/edit/")
 
         header = self.page.locator("h1")
         expect(header).to_have_text("Editar evento")
@@ -270,19 +271,19 @@ class EventCRUDTest(EventBaseTest):
 
         # Verificar que el formulario está precargado con los datos del evento y luego los editamos
         title = self.page.get_by_label("Título del Evento")
-        expect(title).to_have_value("Evento de prueba 1")
+        expect(title).to_have_value("Evento de prueba 2")
         title.fill("Titulo editado")
 
         description = self.page.get_by_label("Descripción")
-        expect(description).to_have_value("Descripción del evento 1")
+        expect(description).to_have_value("Descripción del evento 2")
         description.fill("Descripcion Editada")
 
         date = self.page.get_by_label("Fecha")
-        expect(date).to_have_value("2025-02-10")
+        expect(date).to_have_value("2025-03-15")
         date.fill("2025-04-20")
 
         time = self.page.get_by_label("Hora")
-        expect(time).to_have_value("10:10")
+        expect(time).to_have_value("14:30")
         time.fill("03:00")
 
         # Enviar el formulario
@@ -291,11 +292,15 @@ class EventCRUDTest(EventBaseTest):
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
 
-        # Verificar que el título del evento ha sido actualizado
-        row = self.page.locator("table tbody tr").last
-        expect(row.locator("td").nth(0)).to_have_text("Titulo editado")
-        expect(row.locator("td").nth(1)).to_have_text("Descripcion Editada")
-        expect(row.locator("td").nth(2)).to_have_text("20 abr 2025, 03:00")
+        # Verificar que el evento editado aparece en la tabla
+        rows = self.page.locator("table tbody tr")
+        expect(rows).to_have_count(3)
+
+        # Verificar que el evento editado tiene los nuevos datos
+        edited_row = rows.filter(has_text="Titulo editado")
+        expect(edited_row).to_have_count(1)
+        expect(edited_row.locator("td").nth(1)).to_have_text("Descripcion Editada")
+        expect(edited_row.locator("td").nth(2)).to_have_text("20 abr 2025, 03:00")
 
     def test_delete_event_organizer(self):
         """Test que verifica la funcionalidad de eliminar un evento para organizadores"""
