@@ -8,8 +8,6 @@ from .models import Event, User, Comment, RefundRequest, Ticket, Category, Notif
 from django.views.decorators.http import require_POST
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.urls import reverse_lazy
-
-#Autor: Buiatti Pedro Nazareno (agregar Notification y UserNotification)
 from .forms import NotificationForm, TicketDiscountForm
 from django.contrib import messages
 from django.db.models import Count
@@ -330,10 +328,10 @@ def my_events_comments(request):
     })
 #AMB DE REFUND REQUESTS
 
-def is_pending(client_id):
-    request = RefundRequest.objects.filter(client__pk = client_id)
-    pending = any(r.approved is None for r in request)
-    return pending
+# def is_pending(client_id):
+#     request = RefundRequest.objects.filter(client__pk = client_id)
+#     pending = any(r.approved is None for r in request)
+#     return pending
 
 @login_required
 def refund_requests(request):
@@ -392,7 +390,7 @@ def refund_form(request, id=None, approval=False):
         client2 = get_object_or_404(User, id=rr.client.pk)
         tickets = Ticket.objects.filter(user=client2)
     else: 
-        if client and is_pending(client.pk):
+        if client and RefundRequest.is_pending(client.pk):
             return redirect("refund_requests")
     
     if request.method == "POST":

@@ -215,6 +215,11 @@ class RefundRequest(models.Model):
         return f"RefundRequest {self.pk} - User: {self.client.username} - Ticket: {self.ticket_code} - Approved: {self.approved}"
     
     @classmethod
+    def is_pending(cls, client_id):
+        requests = cls.objects.filter(client__pk=client_id)
+        return any(r.approved is None for r in requests)
+    
+    @classmethod
     def validate(cls, tC, reason, client):
         errors = {}
 
