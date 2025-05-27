@@ -1,8 +1,9 @@
 from playwright.sync_api import expect
 from app.models import RefundRequest, Ticket, Event, User
 from app.test.test_e2e.base import BaseE2ETest
-from datetime import datetime, timedelta
+import datetime
 import re
+from django.utils import timezone
 
 
 class RefundRequestE2ETest(BaseE2ETest):
@@ -21,8 +22,7 @@ class RefundRequestE2ETest(BaseE2ETest):
         # Crear evento asociado al organizador
         self.event = Event.objects.create(
             title="Evento de prueba",
-            description="Descripción del evento",
-            scheduled_at=datetime.now() + timedelta(days=10),
+            scheduled_at=timezone.now() - datetime.timedelta(days=1),
             organizer=self.organizer,
         )
 
