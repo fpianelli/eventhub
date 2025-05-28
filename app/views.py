@@ -1,18 +1,23 @@
 import datetime
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin, AccessMixin
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
-from .models import Event, User, Comment, RefundRequest, Ticket, Category, Notification, UserNotification 
+from .models import Event, User, Comment, RefundRequest, Ticket, Category, Notification, UserNotification, TicketDiscount
 from django.views.decorators.http import require_POST
-
-#Autor: Buiatti Pedro Nazareno (agregar Notification y UserNotification)
-from .forms import NotificationForm
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.urls import reverse_lazy
+from .forms import NotificationForm, TicketDiscountForm
 from django.contrib import messages
 from django.db.models import Count
 from django.db.models import Q
 from django.db import transaction
 from django.core.exceptions import ValidationError
+
+from django.http import JsonResponse
+
+
 
 def register(request):
     if request.method == "POST":
@@ -81,6 +86,11 @@ def event_detail(request, id):
     comments = event.comments.all().order_by("-created_at")
     errors = {}
 
+    #Calcular cuenta regresiva para usuarios no organizadores
+    countdown = None
+    if not request.user.is_organizer:
+        countdown = event.get_countdown()
+
     #Eliminar comentario
     if "delete_comment" in request.POST:
         comment_id = request.POST.get("comment_id")
@@ -104,7 +114,7 @@ def event_detail(request, id):
 
                 #Validar campos title y text
                 errors = Comment.validate(title, text)
-                
+
                 if not errors:  #Si no hay errores
                     comment.title = title
                     comment.text = text
@@ -151,7 +161,8 @@ def event_detail(request, id):
         "comments": comments,
         "edit_comment": edit_comment,
         "errors": errors,
-        "user_is_organizer": request.user.is_organizer
+        "user_is_organizer": request.user.is_organizer,
+        "countdown": countdown
     })
 
 @login_required
@@ -379,7 +390,7 @@ def my_events_comments(request):
         if comment.event.organizer != request.user:
             messages.error(request, "No tienes permiso para eliminar este comentario")
             return redirect("my_events_comments")
-        
+
         comment.delete()
         messages.success(request, "Comentario eliminado correctamente")
         return redirect("my_events_comments")
@@ -392,6 +403,12 @@ def my_events_comments(request):
         "user_is_organizer": request.user.is_organizer
     })
 #AMB DE REFUND REQUESTS
+
+# def is_pending(client_id):
+#     request = RefundRequest.objects.filter(client__pk = client_id)
+#     pending = any(r.approved is None for r in request)
+#     return pending
+
 @login_required
 def refund_requests(request):
     rr = RefundRequest.objects.all().order_by("created_at")
@@ -426,9 +443,7 @@ def refund_approve(request, id):
         if request.method == "POST":
             rr = get_object_or_404(RefundRequest, pk=id)
             rr.approve_refund()
-        return redirect("refund_requests")
-    else:
-        return redirect("refund_requests")
+    return redirect("refund_requests")
 
 @login_required
 def refund_reject(request, id):
@@ -444,16 +459,22 @@ def refund_reject(request, id):
 def refund_form(request, id=None, approval=False):
     client = request.user
     rr = None
+    errors = {}
+    tickets = Ticket.objects.filter(user=client)
     if id is not None:
         rr = get_object_or_404(RefundRequest, pk=id)
+        client2 = get_object_or_404(User, id=rr.client.pk)
+        tickets = Ticket.objects.filter(user=client2)
+    else: 
+        if client and RefundRequest.is_pending(client.pk):
+            return redirect("refund_requests")
     
-    
-
     if request.method == "POST":
         ticket_code = request.POST.get("ticket_code")
         reason = request.POST.get("reason")
 
         errors = RefundRequest.validate(ticket_code, reason, client)
+
 
         if len(errors) > 0:
             return render(
@@ -474,13 +495,15 @@ def refund_form(request, id=None, approval=False):
             return redirect('refund_detail', id=rr.pk)
         else:
             rr = get_object_or_404(RefundRequest, pk=id)
-            rr.edit_refund(ticket_code, reason, client)
+            rr.edit_refund(ticket_code, reason, client2)
             return redirect('refund_detail', id=rr.pk)
+
     return render(
         request,
         "refundRequest/refund_form.html",
-        {"rr": rr, "user_is_organizer": request.user.is_organizer},
+        {"rr": rr, "user_is_organizer": request.user.is_organizer, "tickets": tickets},
     )
+
 
 
 
@@ -594,6 +617,69 @@ def ticket_delete(request, ticket_id):
 
 
 
+class OrganizerRequiredMixin(AccessMixin):
+    """Evita que el usuario no organizador acceda, sin mostrar errores ni mensajes."""
+
+    def dispatch(self, request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            return self.handle_no_permission()
+
+        if not getattr(request.user, 'is_organizer', False):
+            # Redirige silenciosamente a la página anterior
+            referer = request.META.get('HTTP_REFERER', '/')
+            return redirect(referer)
+
+        return super().dispatch(request, *args, **kwargs)
+
+class OrganizerContextMixin:
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["user_is_organizer"] = getattr(self.request.user, "is_organizer", False)
+        return context
+
+
+class TicketDiscountListView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, ListView):
+    model = TicketDiscount
+    template_name = 'app/ticketdiscount_list.html'
+
+
+
+class TicketDiscountCreateView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, CreateView):
+    model = TicketDiscount
+    form_class = TicketDiscountForm
+    template_name = 'app/ticketdiscount_form.html'
+    success_url = reverse_lazy('ticketdiscount_list')
+
+class TicketDiscountUpdateView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, UpdateView):
+    model = TicketDiscount
+    form_class = TicketDiscountForm
+    template_name = 'app/ticketdiscount_form.html'
+    success_url = reverse_lazy('ticketdiscount_list')
+
+class TicketDiscountDeleteView(LoginRequiredMixin, OrganizerContextMixin, OrganizerRequiredMixin, DeleteView):
+    model = TicketDiscount
+    template_name = 'app/ticketdiscount_confirm_delete.html'
+    success_url = reverse_lazy('ticketdiscount_list')
+
+
+def validate_ticket(request):
+    code = request.GET.get('code')
+
+    if not code:
+        return JsonResponse({'valid': False, 'message': 'Datos incompletos'}, status=400)
+
+    try:
+        descuento = TicketDiscount.objects.get(code=code)
+        return JsonResponse({
+            'valid': True,
+            'discount_percent': descuento.percentage,
+            'message': f'Cupón aplicado: {descuento.percentage}% de descuento'
+        })
+    except TicketDiscount.DoesNotExist:
+        return JsonResponse({'valid': False, 'message': 'Código inválido'})
+
+
+
 #Autor: Buiatti Pedro Nazareno
 #Para listar notificaciones
 @login_required
@@ -605,7 +691,7 @@ def listNotifications(request):
     eventId = request.GET.get('event_id')
     priority = request.GET.get('priority')
     searchQuery = request.GET.get('q', '').strip()
-    
+
     if eventId:
         notifications = notifications.filter(notification__event__id=eventId)
     if priority:
@@ -622,12 +708,12 @@ def listNotifications(request):
         notification = user_notification.notification
         recipients_count = UserNotification.objects.filter(notification=notification).count()
         is_broadcast = recipients_count == all_users_count
-        show_detail = str(user_notification.pk) == detail_id  
-        
+        show_detail = str(user_notification.pk) == detail_id
+
         notifications_data.append({
             'user_notification': user_notification,
             'is_broadcast': is_broadcast,
-            'show_detail': show_detail  
+            'show_detail': show_detail
         })
 
     numNotifications = notifications.filter(is_read=False).count()
@@ -662,7 +748,7 @@ def createNotification(request):
         form = NotificationForm(request.POST, user=user)
         if form.is_valid():
             notification = form.save(commit=False) #Guarda la instancia sin guardarla en la base aún
-            notification.save() # Se guarda en la base con el usuario creador 
+            notification.save() # Se guarda en la base con el usuario creador
 
             recipient_type = request.POST.get('recipient_type')
             if recipient_type == 'all':
@@ -706,13 +792,13 @@ def deleteNotification(request, pk):
             messages.success(request, "La notificación ha sido marcada como leída.")
 
         return redirect('listNotifications')
-    
+
     return redirect('listNotifications')
 
 #Autor: Buiatti Pedro Nazareno
 #Para editar una notificacion
 @login_required
-def updateNotification(request, pk): 
+def updateNotification(request, pk):
 
     if pk == 'all':
         UserNotification.objects.filter(user=request.user).update(is_read=True)
@@ -728,7 +814,7 @@ def updateNotification(request, pk):
     except (Notification.DoesNotExist, UserNotification.DoesNotExist):
         messages.error(request, "Notificación no encontrada o no tienes permisos")
         return redirect('listNotifications')
-    
+
     if not request.user.is_organizer:
         if request.method == "POST":
             user_notification.is_read = True
@@ -754,8 +840,8 @@ def updateNotification(request, pk):
         form = NotificationForm(request.POST, instance=notification, user=request.user)
         if form.is_valid():
             try:
-                with transaction.atomic(): 
-                  
+                with transaction.atomic():
+
                     notification = form.save()
                     recipient_type = request.POST.get('recipient_type')
                     UserNotification.objects.filter(notification=notification).exclude(user=request.user).delete()
@@ -769,7 +855,7 @@ def updateNotification(request, pk):
                                 defaults={'is_read': False}
                             )
                         msg = "Notificación actualizada para todos los usuarios"
-                    
+
                     elif recipient_type == 'specific':
                         recipient_id = request.POST.get('recipient')
                         if recipient_id:
@@ -790,7 +876,7 @@ def updateNotification(request, pk):
                                     'users': User.objects.exclude(id=request.user.id),
                                     'is_broadcast': is_broadcast
                                 })
-            
+
                     messages.success(request, msg)
                     return redirect('listNotifications')
             except Exception as e:
@@ -801,8 +887,10 @@ def updateNotification(request, pk):
             'recipient_type': 'all' if is_broadcast else 'specific',
         }
 
+        
         if specific_recipient:
             initial_data['recipient'] = specific_recipient.pk
+
 
 
         form = NotificationForm(

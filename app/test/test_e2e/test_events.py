@@ -5,7 +5,6 @@ from django.utils import timezone
 from playwright.sync_api import expect
 
 from app.models import Event, User
-
 from app.test.test_e2e.base import BaseE2ETest
 
 
@@ -50,6 +49,14 @@ class EventBaseTest(BaseE2ETest):
             organizer=self.organizer,
         )
 
+        # Evento 3
+        self.event3 = Event.objects.create(
+            title="Evento de prueba 3",
+            description="Descripción del evento 3",
+            scheduled_at=timezone.now() - datetime.timedelta(days=1),
+            organizer=self.organizer,
+        )
+
     def _table_has_event_info(self):
         """Método auxiliar para verificar que la tabla tiene la información correcta de eventos"""
         # Verificar encabezados de la tabla
@@ -62,29 +69,41 @@ class EventBaseTest(BaseE2ETest):
         expect(headers.nth(5)).to_have_text("Categorias")
         expect(headers.nth(6)).to_have_text("Acciones")
 
-        # Verificar que los eventos aparecen en la tabla
-        rows = self.page.locator("table tbody tr")
-        expect(rows).to_have_count(2)
+        # Buscar eventos por título para evitar dependencia del orden
+        event1_row = self.page.locator("tr:has-text('Evento de prueba 1')")
+        event2_row = self.page.locator("tr:has-text('Evento de prueba 2')")
+        event3_row = self.page.locator("tr:has-text('Evento de prueba 3')")
 
-        # Verificar datos del primer evento
-        row0 = rows.nth(0)
-        expect(row0.locator("td").nth(0)).to_have_text("Evento de prueba 1")
-        expect(row0.locator("td").nth(1)).to_have_text("Descripción del evento 1")
-        expect(row0.locator("td").nth(2)).to_have_text("10 feb 2030, 10:10")
+        # Verificar que los eventos están presentes
+        expect(event1_row).to_be_visible()
+        expect(event2_row).to_be_visible()
+        expect(event3_row).to_be_visible()
 
-        # Verificar datos del segundo evento
-        expect(rows.nth(1).locator("td").nth(0)).to_have_text("Evento de prueba 2")
-        expect(rows.nth(1).locator("td").nth(1)).to_have_text("Descripción del evento 2")
-        expect(rows.nth(1).locator("td").nth(2)).to_have_text("15 mar 2030, 14:30")
-        expect(row0.locator("td").nth(3)).to_contain_text("Activo", ignore_case=True)
+        # Verificar datos del evento 1
+        expect(event1_row.locator("td").nth(0)).to_have_text("Evento de prueba 1")
+        expect(event1_row.locator("td").nth(1)).to_have_text("Descripción del evento 1")
+        expect(event1_row.locator("td").nth(2)).to_have_text("10 feb 2030, 10:10")
+        expect(event1_row.locator("td").nth(3)).to_contain_text("Activo", ignore_case=True)
+
+        # Verificar datos del evento 2
+        expect(event2_row.locator("td").nth(0)).to_have_text("Evento de prueba 2")
+        expect(event2_row.locator("td").nth(1)).to_have_text("Descripción del evento 2")
+        expect(event2_row.locator("td").nth(2)).to_have_text("15 mar 2030, 14:30")
+        expect(event2_row.locator("td").nth(3)).to_contain_text("Activo", ignore_case=True)
+
+        # Verificar datos del evento 3
+        expect(event3_row.locator("td").nth(0)).to_have_text("Evento de prueba 3")
+        expect(event3_row.locator("td").nth(1)).to_have_text("Descripción del evento 3")
+        expect(event3_row.locator("td").nth(3)).to_contain_text("Finalizado", ignore_case=True)
 
     def _table_has_correct_actions(self, user_type):
         """Método auxiliar para verificar que las acciones son correctas según el tipo de usuario"""
-        row0 = self.page.locator("table tbody tr").nth(0)
-
-        detail_button = row0.get_by_role("link", name="Ver Detalle")
-        edit_button = row0.get_by_role("link", name="Editar")
-        delete_form = row0.locator("form")
+        # Usar el evento1 para verificar acciones
+        row = self.page.locator(f"tr:has-text('{self.event1.title}')")
+        
+        detail_button = row.get_by_role("link", name="Ver Detalle")
+        edit_button = row.get_by_role("link", name="Editar")
+        delete_form = row.locator("form")
 
         expect(detail_button).to_be_visible()
         expect(detail_button).to_have_attribute("href", f"/events/{self.event1.id}/")
@@ -227,7 +246,6 @@ class EventCRUDTest(EventBaseTest):
         # Completar el formulario
         self.page.get_by_label("Título del Evento").fill("Evento de prueba E2E")
         self.page.get_by_label("Descripción").fill("Descripción creada desde prueba E2E")
-        #AUTOR: Buiatti Pedro Nazareno
         self.page.locator("#date").fill("2025-06-15")
         self.page.locator("#time").fill("16:45")
 
@@ -238,9 +256,10 @@ class EventCRUDTest(EventBaseTest):
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
 
-        # Verificar que ahora hay 3 eventos
+        # Verificar que el nuevo evento existe
         row = self.page.locator(f"table tbody tr:has-text('Evento de prueba E2E')")
         expect(row).to_be_visible()
+        
         expect(row.locator("td").nth(0)).to_have_text("Evento de prueba E2E")
         expect(row.locator("td").nth(1)).to_have_text("Descripción creada desde prueba E2E")
         expect(row.locator("td").nth(2)).to_have_text("15 jun 2025, 16:45")
@@ -253,40 +272,43 @@ class EventCRUDTest(EventBaseTest):
         # Ir a la página de eventos
         self.page.goto(f"{self.live_server_url}/events/")
 
-        # Hacer clic en el botón editar del primer evento
-        self.page.get_by_role("link", name="Editar").first.click()
+        # Buscar el evento por título
+        row = self.page.locator("tr:has-text('Evento de prueba 2')")
+        
+        # Hacer clic en el botón editar
+        row.get_by_role("link", name="Editar").click()
 
         # Verificar que estamos en la página de edición
-        expect(self.page).to_have_url(f"{self.live_server_url}/events/{self.event1.id}/edit/")
+        expect(self.page).to_have_url(f"{self.live_server_url}/events/{self.event2.id}/edit/")
 
         header = self.page.locator("h1")
         expect(header).to_have_text("Editar evento")
         expect(header).to_be_visible()
 
-        # Verificar que el formulario está precargado con los datos del evento y luego los editamos
+        # Verificar y editar los campos
         title = self.page.get_by_label("Título del Evento")
-        expect(title).to_have_value("Evento de prueba 1")
+        expect(title).to_have_value("Evento de prueba 2")
         title.fill("Titulo editado")
 
         description = self.page.get_by_label("Descripción")
-        expect(description).to_have_value("Descripción del evento 1")
+        expect(description).to_have_value("Descripción del evento 2")
         description.fill("Descripcion Editada")
 
         date = self.page.locator("#date")
-        expect(date).to_have_value("2030-02-10")
+        expect(date).to_have_value("2030-03-15")
         date.fill("2025-04-20")
 
         time = self.page.locator("#time")
-        expect(time).to_have_value("10:10")
+        expect(time).to_have_value("14:30")
         time.fill("03:00")
 
-        # Enviar el formulario
-        self.page.get_by_role("button", name="Crear Evento").click()
+        # CORRECCIÓN PRINCIPAL: Usar selector CSS en lugar de texto
+        self.page.locator("button.btn-primary").click()
 
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
 
-        # Verificar que el título del evento ha sido actualizado
+        # Verificar que el evento ha sido actualizado
         row = self.page.locator(f"table tbody tr:has-text('Titulo editado')")
         expect(row).to_be_visible()
         
@@ -303,17 +325,50 @@ class EventCRUDTest(EventBaseTest):
         self.page.goto(f"{self.live_server_url}/events/")
 
         # Contar eventos antes de eliminar
-        initial_count = len(self.page.locator("table tbody tr").all())
+        initial_count = Event.objects.count()
 
-        # Hacer clic en el botón eliminar del primer evento
-        self.page.get_by_role("button", name="Eliminar").first.click()
+        # Buscar el evento por título
+        row = self.page.locator("tr:has-text('Evento de prueba 1')")
+        
+        # Hacer clic en el botón eliminar
+        row.get_by_role("button", name="Eliminar").click()
 
         # Verificar que redirigió a la página de eventos
         expect(self.page).to_have_url(f"{self.live_server_url}/events/")
 
-        # Verificar que ahora hay un evento menos
-        rows = self.page.locator("table tbody tr")
-        expect(rows).to_have_count(initial_count - 1)
+        # Verificar que se redujo el conteo
+        expect(self.page.locator("table tbody tr")).to_have_count(initial_count - 1)
 
-        # Verificar que el evento eliminado ya no aparece en la tabla
-        expect(self.page.get_by_text("Evento de prueba 1")).to_have_count(0)
+        # Verificar que el evento eliminado ya no aparece
+        expect(self.page.locator("tr:has-text('Evento de prueba 1')")).to_have_count(0)
+
+
+class EventCountdownE2ETest(EventBaseTest):
+    """Tests E2E para la funcionalidad de cuenta regresiva de eventos"""
+
+    def test_countdown_past_event(self):
+        """Test que verifica que no se muestra la cuenta regresiva para eventos pasados"""
+
+        # Iniciar sesión como usuario regular
+        self.login_user("usuario", "password123")
+
+        # Navegar al evento que ya ocurrió
+        self.page.goto(f"{self.live_server_url}/events/{self.event3.id}/")
+
+        # Verificar que la sección de countdown no existe
+        expect(self.page.locator(".countdown-container")).to_have_count(0)
+
+        # Verificar que no se muestra el mensaje de que el evento ha comenzado
+        expect(self.page.locator("text=¡El evento ha comenzado!")).to_have_count(0)
+
+    def test_countdown_not_displayed_organizers(self):
+        """Test que verifica que los organizadores no ven la cuenta regresiva"""
+
+        # Iniciar sesión como organizador
+        self.login_user("organizador", "password123")
+
+        # Navegar al evento 1
+        self.page.goto(f"{self.live_server_url}/events/{self.event1.id}/")
+
+        # Verificar que la sección de countdown no existe
+        expect(self.page.locator(".countdown-container")).to_have_count(0)

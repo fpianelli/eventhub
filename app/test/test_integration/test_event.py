@@ -43,6 +43,13 @@ class BaseEventTestCase(TestCase):
             organizer=self.organizer,
         )
 
+        self.event3 = Event.objects.create(
+            title="Evento 3",
+            description="Descripción del evento 3",
+            scheduled_at=timezone.now() - datetime.timedelta(days=1),
+            organizer=self.organizer,
+        )
+
         # Cliente para hacer peticiones
         self.client = Client()
 
@@ -63,13 +70,14 @@ class EventsListViewTest(BaseEventTestCase):
         self.assertTemplateUsed(response, "app/events.html")
         self.assertIn("events", response.context)
         self.assertIn("user_is_organizer", response.context)
-        self.assertEqual(len(response.context["events"]), 2)
+        self.assertEqual(len(response.context["events"]), 3)
         self.assertFalse(response.context["user_is_organizer"])
 
         # Verificar que los eventos están ordenados por fecha
         events = list(response.context["events"])
-        self.assertEqual(events[0].id, self.event1.id)
-        self.assertEqual(events[1].id, self.event2.id)
+        self.assertEqual(events[0].id, self.event3.id)
+        self.assertEqual(events[1].id, self.event1.id)
+        self.assertEqual(events[2].id, self.event2.id)
 
     def test_events_view_with_organizer_login(self):
         """Test que verifica que la vista events funciona cuando el usuario es organizador"""
@@ -211,6 +219,9 @@ class EventFormSubmissionTest(BaseEventTestCase):
         # Verificar que se creó el evento
         self.assertTrue(Event.objects.filter(title="Nuevo Evento").exists())
         evento = Event.objects.get(title="Nuevo Evento")
+
+        scheduled_at_local = evento.scheduled_at.astimezone(timezone.get_default_timezone())
+
         self.assertEqual(evento.description, "Descripción del nuevo evento")
         self.assertEqual(evento.scheduled_at.year, 2025)
         self.assertEqual(evento.scheduled_at.month, 5)
@@ -218,6 +229,7 @@ class EventFormSubmissionTest(BaseEventTestCase):
         local_time = timezone.localtime(evento.scheduled_at)
         self.assertEqual(local_time.hour, 14)
         self.assertEqual(evento.scheduled_at.minute, 30)
+
         self.assertEqual(evento.organizer, self.organizer)
 
     def test_event_form_post_edit(self):
@@ -244,6 +256,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
 
         # Verificar que el evento fue actualizado
         self.event1.refresh_from_db()
+
+        scheduled_at_local = self.event1.scheduled_at.astimezone(timezone.get_current_timezone())
 
         self.assertEqual(self.event1.title, "Evento 1 Actualizado")
         self.assertEqual(self.event1.description, "Nueva descripción actualizada")
@@ -337,3 +351,59 @@ class EventDeleteViewTest(BaseEventTestCase):
 
         # Verificar que el evento sigue existiendo
         self.assertTrue(Event.objects.filter(pk=self.event1.id).exists())
+
+class EventCountdownIntegrationTest(BaseEventTestCase):
+    """Tests para la cuenta regresiva de eventos"""
+
+    def test_countdown_display_regular_user(self):
+        """Test que verifica que la cuenta regresiva se muestra correctamenta para usuarios regulares"""
+
+        self.client.login(username='regular', password='password123')
+
+        #Acceder a la página de un evento futuro
+        response = self.client.get(reverse('event_detail', args=[self.event1.id]))
+
+        #Verificar que la cuenta regresiva está en el contexto
+        self.assertIn('countdown', response.context)
+        countdown = response.context['countdown']
+
+        #Verificar que los valores de la cuenta regresiva sean coherentes
+        self.assertGreaterEqual(countdown['days'], 0)
+        self.assertGreaterEqual(countdown['hours'], 0)
+        self.assertGreaterEqual(countdown['minutes'], 0)
+        self.assertGreater(countdown['total_seconds'], 0)
+
+        #Verificar que se muestra en el template
+        self.assertContains(response, 'El evento comienza en:')
+        self.assertContains(response, 'Días')
+        self.assertContains(response, 'Horas')
+        self.assertContains(response, 'Minutos')
+
+        #Verificar que el JSON está incluido
+        self.assertContains(response, 'countdown-data')
+
+    def test_no_countdown_past_events(self):
+        """Test que verifica que no se muestra la cuenta regresiva para eventos pasados"""
+        self.client.login(username='regular', password='password123')
+
+        #Acceder a la página de un evento pasado
+        response= self.client.get(reverse('event_detail', args=[self.event3.id]))
+
+        #Verificar que no hay cuenta regresiva en el contexto
+        self.assertIsNone(response.context.get('countdown'))
+
+        #Verificar que no se muestra la sección de countdown
+        self.assertNotContains(response, 'El evento comienza en:')
+
+    def test_no_countdown_organizers(self):
+        """Test que verifica que los organizadores no ven la cuenta regresiva"""
+        self.client.login(username='organizador', password='password123')
+
+        #Acceder a la página de un evento
+        response = self.client.get(reverse('event_detail', args=[self.event1.id]))
+
+        #Verificar que no hay cuenta regresiva en el contexto
+        self.assertIsNone(response.context.get('countdown'))
+
+        #Verificar que no se muestra la sección de countdown
+        self.assertNotContains(response, 'El evento comienza en:')

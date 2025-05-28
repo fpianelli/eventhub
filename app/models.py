@@ -2,7 +2,12 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils import timezone
 from django.conf import settings
+from datetime import timedelta
 import uuid
+from django.core.validators import RegexValidator
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
+
 
 #AUTOR: Buiatti Pedro Nazareno
 from django.db.models import Sum
@@ -76,6 +81,27 @@ class Event(models.Model):
         if not self.pk:
             return 0
         return self.ticket_set.aggregate(total=Sum('quantity'))['total'] or 0
+
+    #Cuenta regresiva del evento
+    def get_countdown(self):
+        now=timezone.now()
+        delta = self.scheduled_at - now
+
+        #Evento terminado
+        if delta.total_seconds() <=0:
+            return None
+        
+        days = delta.days
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes= remainder // 60
+
+        return {
+            'days' : days,
+            'hours' : hours,
+            'minutes' : minutes,
+            'total_seconds' : delta.total_seconds(),
+            'event_datetime' : self.scheduled_at.isoformat()
+        }
 
     #AUTOR: Buiatti Pedro Nazareno
     @property
@@ -270,7 +296,7 @@ class Comment(models.Model):
 
         if len(title) > 100:
             errors["title"] = "El título no puede exceder los 100 caracteres"
-            
+
         return errors
 
     #Metodo para crear un comentario
@@ -308,6 +334,11 @@ class RefundRequest(models.Model):
     client = models.ForeignKey(User, on_delete=models.CASCADE, related_name="refund_requests")
     def __str__(self):
         return f"RefundRequest {self.pk} - User: {self.client.username} - Ticket: {self.ticket_code} - Approved: {self.approved}"
+    
+    @classmethod
+    def is_pending(cls, client_id):
+        requests = cls.objects.filter(client__pk=client_id)
+        return any(r.approved is None for r in requests)
     
     @classmethod
     def validate(cls, tC, reason, client):
@@ -403,7 +434,45 @@ class Ticket (models.Model):
 
         return errors
 
+# Validador para códigos alfanuméricos sin espacios
+alphanumeric_validator = RegexValidator(
+    regex=r'^[a-zA-Z0-9]+$',
+    message='El código debe ser alfanumérico y no debe contener espacios.'
+)
+class TicketDiscount(models.Model):
 
+    code = models.CharField(
+        max_length=20,
+        unique=True,
+        validators=[alphanumeric_validator]
+    )
+    percentage =models.IntegerField(
+    validators=[MinValueValidator(0), MaxValueValidator(100)]
+)
+
+    def __str__(self):
+        return f"{self.code} ({self.percentage * 100:.0f}%)"
+
+    @classmethod
+    def validate_discount(cls, code, percentage):
+        errors = {}
+
+        if not code:
+            errors["code"] = "El código es requerido"
+        else:
+            try:
+                alphanumeric_validator(code)
+            except ValidationError as e:
+                errors["code"] = e.messages[0]
+
+        try:
+            percentage = float(percentage)
+            if not (0 < percentage <= 100):
+                errors["percentage"] = "El porcentaje debe estar entre 0 y 100"
+        except ValueError:
+            errors["percentage"] = "Debe ser un número válido"
+
+        return errors
 #Autor: Buiatti Pedro Nazareno
 #Modelo de notificacion
 class Notification(models.Model):
@@ -435,14 +504,14 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.title} - Creada el {self.created_at}"
-    
+
 
 #Autor: Buiatti Pedro Nazareno
 #Modelo para intermedia entre Notificacion y Usuario
 class UserNotification(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user_notifications")
     notification = models.ForeignKey(Notification, on_delete=models.CASCADE, related_name="user_notifications")
-    is_read = models.BooleanField(default=False) 
+    is_read = models.BooleanField(default=False)
 
     def __str__(self):
         return f"Notificación: {self.notification.title} - Usuario_ {self.user.username}"

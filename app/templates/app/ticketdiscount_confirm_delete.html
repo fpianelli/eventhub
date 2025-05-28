@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+{% if user.is_organizer %}
+
+<div class="container mt-4">
+    <h2>Eliminar Descuento</h2>
+
+    <p>¿Estás seguro de que querés eliminar el descuento <strong>{{ object.code }}</strong>?</p>
+
+    <form method="post" class="mt-3">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        <a href="{% url 'ticketdiscount_list' %}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+
+
+{% endif%}
+{% endblock %}
