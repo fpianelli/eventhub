@@ -108,28 +108,25 @@ class Event(models.Model):
     
     #AUTOR: Buiatti Pedro Nazareno
     def save(self, *args, **kwargs):
-        now = timezone.now()
-        original_status = None
+            now = timezone.now()
+            original_status = None
+            if self.pk:
+                original = Event.objects.get(pk=self.pk)
+                original_status = original.status
 
-        if self.pk:
-            original = Event.objects.get(pk=self.pk)
-            original_status = original.status
+            if original_status in ['AGOTADO', 'FINALIZADO']:
+                if self.status != original_status:
+                    raise ValidationError("Evento AGOTADO/FINALIZADO no se puede modificar")
 
-        if original_status in ['AGOTADO', 'FINALIZADO']:
-            if self.status != original_status:  
-                raise ValidationError("Evento AGOTADO/FINALIZADO no se puede modificar")
+            new_status = self.status
+            if self.tickets_sold >= self.max_capacity:
+                new_status = 'AGOTADO'
+            elif self.scheduled_at < now:
+                new_status = 'FINALIZADO'
 
-        if self.status == 'REPROGRAMADO' and self.new_scheduled_at:
-            self.scheduled_at = self.new_scheduled_at
+            self.status = new_status
 
-        new_status = self.status
-        if self.tickets_sold >= self.max_capacity:
-            new_status = 'AGOTADO'
-        elif self.scheduled_at < now:
-            new_status = 'FINALIZADO'
-
-        self.status = new_status 
-        super().save(*args, **kwargs)
+            super().save(*args, **kwargs)
 
 
     #AUTOR: Buiatti Pedro Nazareno (agregar parametros status=None, new_scheduled_at=None)

@@ -542,7 +542,7 @@ def ticket_form(request, event_id):
 
         #AUTOR: Buiatti Pedro Nazareno
         event.refresh_from_db()
-        ticket.event.save()
+        event.save()
 
         return redirect('ticket_detail')
     return render(request, "app/ticket_form.html", {'event': event, 'ticket': None, 'is_edit': False, 'data': {}, 'errors': {},})
