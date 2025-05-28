@@ -197,6 +197,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "description": "Descripción del nuevo evento",
             "date": "2025-05-01",
             "time": "14:30",
+            "status": "ACTIVO",  
+            "max_capacity": "100"
         }
 
         # Hacer petición POST a la vista event_form
@@ -213,7 +215,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
         self.assertEqual(evento.scheduled_at.year, 2025)
         self.assertEqual(evento.scheduled_at.month, 5)
         self.assertEqual(evento.scheduled_at.day, 1)
-        self.assertEqual(evento.scheduled_at.hour, 14)
+        local_time = timezone.localtime(evento.scheduled_at)
+        self.assertEqual(local_time.hour, 14)
         self.assertEqual(evento.scheduled_at.minute, 30)
         self.assertEqual(evento.organizer, self.organizer)
 
@@ -228,6 +231,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "description": "Nueva descripción actualizada",
             "date": "2025-06-15",
             "time": "16:45",
+            "status": "ACTIVO", 
+            "max_capacity": "100"
         }
 
         # Hacer petición POST para editar el evento
@@ -245,7 +250,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
         self.assertEqual(self.event1.scheduled_at.year, 2025)
         self.assertEqual(self.event1.scheduled_at.month, 6)
         self.assertEqual(self.event1.scheduled_at.day, 15)
-        self.assertEqual(self.event1.scheduled_at.hour, 16)
+        local_time = timezone.localtime(self.event1.scheduled_at)
+        self.assertEqual(local_time.hour, 16)
         self.assertEqual(self.event1.scheduled_at.minute, 45)
 
 

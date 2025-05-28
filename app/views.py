@@ -238,6 +238,12 @@ def event_form(request, id=None):
                 new_scheduled_at=new_scheduled_at
 
             )
+
+            for category_id in selected_categories:
+                category = Category.objects.get(id=category_id)
+                category.events.add(event)
+
+            return redirect("events")
         else:
             event = get_object_or_404(Event, pk=id)
             event.title = title
@@ -252,19 +258,16 @@ def event_form(request, id=None):
             #AUTOR: Buiatti Pedro Nazareno (editado, antes estaba solo el event.save())
             try:
                 event.save()  
+                event.categories.clear()
+                for category_id in selected_categories:
+                    category = Category.objects.get(id=category_id)
+                    category.events.add(event)
+                return redirect("events")
             except ValidationError as e:
                 messages.error(request, str(e))  
                 return redirect('event_edit', id=id)
 
-            # Si es edición, limpiamos categorías anteriores
-            event.categories.clear()
-
-        # Ahora asociamos las categorías seleccionadas
-        for category_id in selected_categories:
-            category = Category.objects.get(id=category_id)
-            category.events.add(event)
-
-        return redirect("events")
+        
 
     event = None
     selected_category_ids = []
