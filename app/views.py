@@ -12,6 +12,7 @@ from django.contrib import messages
 from django.db.models import Count
 from django.db.models import Q
 from django.db import transaction
+from django.core.exceptions import ValidationError
 
 def register(request):
     if request.method == "POST":
@@ -197,7 +198,7 @@ def event_form(request, id=None):
         try:
             max_capacity = int(max_capacity)
         except ValueError:
-            messages.error(request, '❌ La capacidad máxima debe ser un número entero válido (ej: 100, 200)')
+            messages.error(request, 'La capacidad máxima debe ser un número entero válido (ej: 100, 200)')
             return redirect('event_edit', id=id) if id else redirect('event_form')
 
         #AUTOR: Buiatti Pedro Nazareno
@@ -248,7 +249,12 @@ def event_form(request, id=None):
             event.status = status
             event.new_scheduled_at = new_scheduled_at
 
-            event.save()
+            #AUTOR: Buiatti Pedro Nazareno (editado, antes estaba solo el event.save())
+            try:
+                event.save()  
+            except ValidationError as e:
+                messages.error(request, str(e))  
+                return redirect('event_edit', id=id)
 
             # Si es edición, limpiamos categorías anteriores
             event.categories.clear()
