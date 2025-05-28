@@ -15,8 +15,7 @@
             <div class="card">
                 <div class="card-body">
 
-<form method="POST" action="{% if event.id %}{% url 'event_edit' event.id %}{% else %}{% url 'event_form' %}{% endif %}">
-
+                    <form method="POST" action="{% if event.id %}{% url 'event_edit' event.id %}{% else %}{% url 'event_form' %}{% endif %}">
 
                         {% csrf_token %}
                         <div class="vstack gap-3">
@@ -59,34 +58,110 @@
                                         value="{{ event.scheduled_at|date:'H:i'}}"
                                         name="time" />
                                 </div>
+
+                                <!--AUTOR: Buiatti Pedro Nazareno-->
+                                <div class="my-3">
+                                    <label for="max_capacity" class="form-label">
+                                        Capacidad Máxima
+                                    </label>
+
+                                    <input 
+                                        class="form-control" 
+                                        id="max_capacity" 
+                                        type="number" 
+                                        min="1"
+                                        value="{{ event.max_capacity|default:"100" }}"
+                                        name="max_capacity"
+                                    />
+                                </div>
+
+                                <!--AUTOR: Buiatti Pedro Nazareno-->
+                                <div class="mb-3 mt-2">
+                                    <label for="status" class="form-label mb-2">Estado del Evento</label>
+                                    {% if readonly_status %}
+                                        <input type="text" class="form-control-plaintext" 
+                                            value="{{ event.get_status_display }}" readonly>
+                                        <input type="hidden" name="status" value="{{ event.status }}">
+                                    {% else %}
+                                        <select class="form-select" id="status" name="status" style="width: 100%">
+                                            {% for value, label in status_choices %}
+                                                <option value="{{ value }}"
+                                                    {% if event.status == value %}selected{% endif %}
+                                                >
+                                                    {{ label }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </div>
+
+                                <!--AUTOR: Buiatti Pedro Nazareno-->
+                                <div id="reprogrammed_fields" style="display: none;">
+                                    <h5>Nueva fecha para evento reprogramado</h5>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label for="new_date" class="form-label" required>
+                                                Nueva Fecha
+                                            </label>
+
+                                            <input
+                                                class="form-control"
+                                                id="new_date"
+                                                type="date"
+                                                name="new_date"
+                                                required
+                                                value="{{ event.new_scheduled_at|date:'Y-m-d'|default:'' }}"
+                                            />
+
+                                            <div class="invalid-feedback">Por favor ingrese una fecha válida</div>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label for="new_time" class="form-label">
+                                                Nueva Hora
+                                            </label>
+
+                                            <input
+                                                class="form-control"
+                                                id="new_time"
+                                                type="time"
+                                                name="new_time"
+                                                required
+                                                value="{{ event.new_scheduled_at|date:'H:i'|default:'' }}" 
+                                            />
+
+                                            <div class="invalid-feedback">Por favor ingrese una hora válida</div>
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
 
-<div class="row">
-    {% for category in categories %}
-        <div class="col-md-4">
-            <div class="form-check">
-                <input
-                    class="form-check-input"
-                    type="checkbox"
-                    name="categories"
-                    value="{{ category.id }}"
-                    id="category_{{ category.id }}"
-                    {% if category.id in selected_category_ids %}checked{% endif %}
-                >
-                <label class="form-check-label" for="category_{{ category.id }}">
-                    {{ category.name }}
-                </label>
-            </div>
-        </div>
-    {% endfor %}
-</div>
+                            <div class="row">
+                                {% for category in categories %}
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            <input
+                                                class="form-check-input"
+                                                type="checkbox"
+                                                name="categories"
+                                                value="{{ category.id }}"
+                                                id="category_{{ category.id }}"
+                                                {% if category.id in selected_category_ids %}checked{% endif %}
+                                            >
+                                            <label class="form-check-label" for="category_{{ category.id }}">
+                                                {{ category.name }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+
                             <div>
-
-<button type="submit" class="btn btn-primary">
-  {% if category.id %}Actualizar Evento{% else %}Crear Evento{% endif %}
-</button>
-
-
+                                <button type="submit" class="btn btn-primary">
+                                {% if category.id %}Actualizar Evento{% else %}Crear Evento{% endif %}
+                                </button>
                             </div>
                         </div>
                     </form>
@@ -95,4 +170,51 @@
         </div>
     </div>
 </div>
+
+<!--AUTOR: Buiatti Pedro Nazareno-->
+<script>
+    document.getElementById('status').addEventListener('change', function() {
+        const reprogrammedFields = document.getElementById('reprogrammed_fields');
+        if (this.value === 'REPROGRAMADO') {
+            reprogrammedFields.style.display = 'block';
+        } else {
+            reprogrammedFields.style.display = 'none';
+        }
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+    const statusSelect = document.getElementById('status');
+    const newDate = document.getElementById('new_date');
+    const newTime = document.getElementById('new_time');
+
+    if (statusSelect) {  
+        const toggleReprogrammedFields = () => {
+            const isReprogrammed = statusSelect.value === 'REPROGRAMADO';
+            document.getElementById('reprogrammed_fields').style.display = isReprogrammed ? 'block' : 'none';
+            newDate.required = isReprogrammed;
+            newTime.required = isReprogrammed;
+        };
+
+        statusSelect.addEventListener('change', toggleReprogrammedFields);
+        toggleReprogrammedFields();
+    }
+
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+        const status = document.getElementById('status')?.value || '{{ current_status }}';
+        const newDate = document.getElementById('new_date');
+        const newTime = document.getElementById('new_time');
+
+        if (status === 'REPROGRAMADO' && (!newDate.value || !newTime.value)) {
+            e.preventDefault();
+            alert('Para reprogramar un evento debe ingresar fecha y hora');
+            
+            if (!newDate.value) newDate.classList.add('is-invalid');
+            if (!newTime.value) newTime.classList.add('is-invalid');
+        }
+    });
+});
+</script>
+
+
 {% endblock %}

@@ -105,6 +105,8 @@ class EventModelTest(TestCase):
             description=new_description,
             scheduled_at=new_scheduled_at,
             organizer=self.organizer,
+            #AUTOR: Buiatti Pedro Nazareno
+            status='ACTIVO' 
         )
 
         # Recargar el evento desde la base de datos
@@ -132,6 +134,8 @@ class EventModelTest(TestCase):
             description=new_description,
             scheduled_at=None,  # No cambiar
             organizer=None,  # No cambiar
+            #AUTOR: Buiatti Pedro Nazareno
+            status='ACTIVO' 
         )
 
         # Recargar el evento desde la base de datos

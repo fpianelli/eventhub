@@ -205,6 +205,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "description": "Descripción del nuevo evento",
             "date": "2025-05-01",
             "time": "14:30",
+            "status": "ACTIVO",  
+            "max_capacity": "100"
         }
 
         # Hacer petición POST a la vista event_form
@@ -221,11 +223,13 @@ class EventFormSubmissionTest(BaseEventTestCase):
         scheduled_at_local = evento.scheduled_at.astimezone(timezone.get_default_timezone())
 
         self.assertEqual(evento.description, "Descripción del nuevo evento")
-        self.assertEqual(scheduled_at_local.year, 2025)
-        self.assertEqual(scheduled_at_local.month, 5)
-        self.assertEqual(scheduled_at_local.day, 1)
-        self.assertEqual(scheduled_at_local.hour, 14)
-        self.assertEqual(scheduled_at_local.minute, 30)
+        self.assertEqual(evento.scheduled_at.year, 2025)
+        self.assertEqual(evento.scheduled_at.month, 5)
+        self.assertEqual(evento.scheduled_at.day, 1)
+        local_time = timezone.localtime(evento.scheduled_at)
+        self.assertEqual(local_time.hour, 14)
+        self.assertEqual(evento.scheduled_at.minute, 30)
+
         self.assertEqual(evento.organizer, self.organizer)
 
     def test_event_form_post_edit(self):
@@ -239,6 +243,8 @@ class EventFormSubmissionTest(BaseEventTestCase):
             "description": "Nueva descripción actualizada",
             "date": "2025-06-15",
             "time": "16:45",
+            "status": "ACTIVO", 
+            "max_capacity": "100"
         }
 
         # Hacer petición POST para editar el evento
@@ -255,11 +261,12 @@ class EventFormSubmissionTest(BaseEventTestCase):
 
         self.assertEqual(self.event1.title, "Evento 1 Actualizado")
         self.assertEqual(self.event1.description, "Nueva descripción actualizada")
-        self.assertEqual(scheduled_at_local.year, 2025)
-        self.assertEqual(scheduled_at_local.month, 6)
-        self.assertEqual(scheduled_at_local.day, 15)
-        self.assertEqual(scheduled_at_local.hour, 16)
-        self.assertEqual(scheduled_at_local.minute, 45)
+        self.assertEqual(self.event1.scheduled_at.year, 2025)
+        self.assertEqual(self.event1.scheduled_at.month, 6)
+        self.assertEqual(self.event1.scheduled_at.day, 15)
+        local_time = timezone.localtime(self.event1.scheduled_at)
+        self.assertEqual(local_time.hour, 16)
+        self.assertEqual(self.event1.scheduled_at.minute, 45)
 
 
 class EventDeleteViewTest(BaseEventTestCase):
